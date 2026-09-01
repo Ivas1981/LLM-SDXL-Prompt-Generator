@@ -1,0 +1,21 @@
+# LM Studio connection settings.
+# Copy this file to config.toml and fill in your values.
+# config.toml is gitignored so secrets stay local.
+
+[lm_studio]
+# Full v1 native endpoint URL. Takes precedence over host/port.
+# Example: "http://192.168.1.10:1234/api/v1"
+# url = "http://localhost:1234/api/v1"
+
+# Alternative: build the URL from host + port.
+# Used only when `url` is not set.
+# host = "localhost"
+# port = 1234
+# use_ssl = false
+
+# OpenAI-compatible base (used for /v1/embeddings).
+# openai_url = "http://localhost:1234/v1"
+
+# Bearer token for LM Studio's auth feature (Developer → Server Settings).
+# Leave empty to be prompted interactively on a 401 response.
+# api_token = ""

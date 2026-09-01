@@ -1,0 +1,20 @@
+Assemble the previous steps into a single JSON object for Stable Diffusion XL.
+Use only these exact keys:
+
+{
+  "subject": "<literally {prompt} followed by clothing in 4-10 words>",
+  "pose": "<body position, expression, eye contact in 5-10 words>",
+  "state": "<physical state in 6-12 words>",
+  "environment": "<location, time, weather, props in 8-15 words>",
+  "relationships": "<spatial layout: where subject is relative to environment, foreground/background in 6-14 words>",
+  "lighting": "<physical lighting in 5-10 words>",
+  "camera": "<camera, lens, angle, quality in 6-12 words>"
+}
+
+Rules:
+- The string "{prompt}" (with braces) MUST appear verbatim in the "subject" field. It is a placeholder for the user's appearance description.
+- Do NOT replace {prompt} with words. Do NOT describe hair, skin, age, or ethnicity — {prompt} covers that.
+- Use only English.
+- Each field is a comma-separated string of short tags suitable for SDXL.
+- Do not write any prose outside the JSON.
+- Output only the JSON object.

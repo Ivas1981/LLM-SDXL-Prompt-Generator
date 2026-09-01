@@ -1,0 +1,12 @@
+Generate clothing and pose for the scene.
+
+Output must be valid JSON with exactly these fields:
+- clothing: short description of what the subject is wearing
+- pose: body position and expression in 5-10 words
+- eye_contact: "direct" or "averted"
+
+Rules:
+- Use only English.
+- Eye contact with camera must be direct.
+- Do NOT describe hair, skin, age, or ethnicity.
+- Output only the JSON object, nothing else.

@@ -1,0 +1,10 @@
+Describe the physical state of the subject for the scene.
+
+Output must be valid JSON with exactly these fields:
+- state: physical state in 6-12 words
+- nudity: how the scene includes partial or full nudity in 6-12 words
+
+Rules:
+- Use only English.
+- Be natural and specific.
+- Output only the JSON object, nothing else.

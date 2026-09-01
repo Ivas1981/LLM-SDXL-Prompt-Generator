@@ -1,0 +1,13 @@
+Generate a detailed environment description for the scene.
+
+Output must be valid JSON with exactly these fields:
+- location: one concrete place
+- time_of_day: one of "morning", "noon", "afternoon", "evening", "night"
+- weather: short weather description
+- props: array of 3-6 specific objects in the scene
+
+Rules:
+- Use only English.
+- Keep each field concise.
+- Do NOT include people or characters.
+- Output only the JSON object, nothing else.
