@@ -55,10 +55,16 @@ def load_system_prompts(prompts_dir: Path) -> dict[str, str]:
         if not p.exists():
             raise FileNotFoundError(f"Missing prompt file: {p}")
         prompts[name] = _read_prompt(p)
+
     if not NSFW:
-        sfw = prompts_dir / "step4_state_sfw.txt"
-        if sfw.exists():
-            prompts["step4_state.txt"] = _read_prompt(sfw)
+        sfw_state = prompts_dir / "step4_state_sfw.txt"
+        if sfw_state.exists():
+            prompts["step4_state.txt"] = _read_prompt(sfw_state)
+    else:
+        nsfw_assemble = prompts_dir / "step7_assemble_nsfw.txt"
+        if nsfw_assemble.exists():
+            prompts["step7_assemble.txt"] = _read_prompt(nsfw_assemble)
+
     return prompts
 
 

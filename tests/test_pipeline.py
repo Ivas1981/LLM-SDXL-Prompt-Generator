@@ -24,7 +24,30 @@ class PipelineTests(unittest.TestCase):
             prompts = load_system_prompts(prompts_dir)
         self.assertIn("step4_state.txt", prompts)
         self.assertIn("state", prompts["step4_state.txt"])
-        self.assertNotIn("nudity", prompts["step4_state.txt"])
+        self.assertNotIn("nudity:", prompts["step4_state.txt"])
+
+    def test_load_system_prompts_sfw_keeps_sfw_assemble(self):
+        prompts_dir = ROOT / "prompts"
+        with unittest.mock.patch("core.pipeline.NSFW", False):
+            prompts = load_system_prompts(prompts_dir)
+        self.assertIn("step7_assemble.txt", prompts)
+        self.assertIn("no nudity", prompts["step7_assemble.txt"].lower())
+
+    def test_load_system_prompts_nsfw_replaces_assemble_prompt(self):
+        prompts_dir = ROOT / "prompts"
+        nsfw_file = prompts_dir / "step7_assemble_nsfw.txt"
+        if not nsfw_file.exists():
+            self.skipTest("step7_assemble_nsfw.txt missing")
+        with unittest.mock.patch("core.pipeline.NSFW", True):
+            prompts = load_system_prompts(prompts_dir)
+        self.assertIn("step7_assemble.txt", prompts)
+        self.assertIn("nudity", prompts["step7_assemble.txt"].lower())
+
+    def test_step2_time_of_day_matches_valid_times(self):
+        content = (ROOT / "prompts" / "step2_environment.txt").read_text(encoding="utf-8")
+        from core.consistency import VALID_TIMES
+        for t in VALID_TIMES:
+            self.assertIn(t, content)
 
     def test_format_user_hint_replaces_names(self):
         from core.pipeline import _format_user_hint, STEP_USER_HINT

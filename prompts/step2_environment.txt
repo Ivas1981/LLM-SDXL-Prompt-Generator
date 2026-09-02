@@ -1,14 +1,16 @@
 Generate a detailed environment description for the scene.
 
 Output must be valid JSON with exactly these fields:
-- location: one concrete place
-- time_of_day: one of "morning", "noon", "afternoon", "evening", "night"
-- weather: short weather description
-- props: array of 3-6 specific objects in the scene
+- location: one concrete place WITHOUT time-of-day or weather phrases
+- time_of_day: exactly one of "morning", "noon", "afternoon", "golden hour", "dusk", "evening", "night", "dawn"
+- weather: short weather tags only (no time-of-day words)
+- props: array of 3-6 distinct object names (strings)
 
 Rules:
 - Use only English.
 - Keep each field concise.
 - Do NOT include people or characters.
-- Each prop must be a distinct object. Separate props with commas in the final assembly.
+- location must not contain phrases like "at night", "in the rain", "sunny", "during sunset".
+- weather must be physically plausible for time_of_day.
+- Each prop must be a distinct physical object.
 - Output only the JSON object, nothing else.

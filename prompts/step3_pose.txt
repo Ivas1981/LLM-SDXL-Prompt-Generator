@@ -1,14 +1,15 @@
 Generate clothing and pose for the scene.
 
 Output must be valid JSON with exactly these fields:
-- clothing: short description of what the subject is wearing
-- pose: body position and expression in 5-10 words
-- eye_contact: "direct" or "averted"
+- clothing: short comma-separated tags of what the subject is wearing
+- pose: body position and expression in 5-10 words, comma-separated tags
+- eye_contact: "direct"
 
 Rules:
 - Use only English.
-- Eye contact with camera must be direct.
-- Do NOT describe hair, skin, age, or ethnicity.
+- Eye contact with camera must always be direct. Put "direct eye contact" inside the pose tags.
+- Do NOT describe hair, skin, age, ethnicity, or body type.
+- Do NOT put physical condition, fatigue, nudity, or undress into clothing or pose — that belongs to the state step.
 - Each field must be comma-separated tags only. NO full sentences. NO periods.
 - Preserve compound terms as single tags. Examples: "worn leather jacket", "faded jeans", "black leather boots", "direct eye contact".
 - Example good pose: "sitting on crate, leaning back, resting elbows on knees, direct eye contact"

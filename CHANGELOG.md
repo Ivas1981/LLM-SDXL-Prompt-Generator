@@ -13,6 +13,7 @@
 - README deduplication fix (removed duplicate feature bullets)
 - `config.toml.example` now includes `[generation]` section with `nsfw` and `models_timeout`
 - Negative prompt baseline now covers common SDXL artifacts by default
+- System prompts overhauled per audit: `time_of_day` in step2 synced with `VALID_TIMES`, step3 `eye_contact` fixed to `"direct"`, step7 now has neutral SFW example plus `step7_assemble_nsfw.txt` for NSFW mode, step4 SFW/NSFW prompts tightened, step5/6/8 rules strengthened
 
 ## [1.1.0] - 2026-09-02
 

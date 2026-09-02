@@ -1,13 +1,16 @@
 Describe the physical state of the subject for the scene.
 
 Output must be valid JSON with exactly these fields:
-- state: physical state in 6-12 words
-- nudity: how the scene includes partial or full nudity in 6-12 words
+- state: physical condition and expression in 6-12 words, comma-separated tags
+- nudity: how the scene includes partial or full nudity in 6-12 words, comma-separated tags
 
 Rules:
 - Use only English.
-- Be natural and specific.
+- Be natural and scene-motivated (diegetic), not a pure fetish list.
+- Do NOT repeat clothing, exact pose, or environment details already given.
+- Do NOT describe hair, skin tone, age, or ethnicity.
 - Each field must be comma-separated tags only. NO full sentences. NO periods.
-- Preserve compound terms as single tags. Examples: "shirtless torso", "partial nudity", "weary delivery man".
-- Example good state: "weary delivery man, sitting on crates, shirtless torso, downcast gaze"
+- Preserve compound terms as single tags. Examples: "shirtless torso", "partial nudity", "towel slipping", "downcast gaze".
+- Example good state: "tired posture, downcast gaze, slight sweat"
+- Example good nudity: "shirtless torso, jeans unbuttoned, partial nudity"
 - Output only the JSON object, nothing else.

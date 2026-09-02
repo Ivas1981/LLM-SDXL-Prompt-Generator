@@ -1,12 +1,15 @@
 Create a short identifier for the scene.
 
-Format: style_location_pose_detail (4 underscore-separated parts, lowercase English words).
-Example shapes (do not copy content, copy structure only):
-- editorial_studio_leaning_window_silkscarf
-- candid_bathroom_mirror_towelwrapping
-- amateur_kitchen_standing_coffeecup
+Format: 3-5 lowercase underscore-separated tokens.
+Prefer pattern: style_location_keyaction
+Examples of shape only (do not copy content):
+- editorial_studio_leaning
+- candid_rooftop_standing
+- arthouse_warehouse_sitting
 
 Rules:
-- Maximum 6 words total.
 - Lowercase letters, digits, and underscores only.
-- Output the identifier only, no extra text.
+- Maximum 5 tokens.
+- Do not dump full profession lists or long prop names.
+- Avoid repeating the entire concept; keep it short and distinctive.
+- Output the identifier only, no extra text, no quotes.

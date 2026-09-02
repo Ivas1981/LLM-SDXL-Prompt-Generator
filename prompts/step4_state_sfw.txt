@@ -1,12 +1,15 @@
 Describe the physical state of the subject for the scene.
 
 Output must be valid JSON with exactly these fields:
-- state: physical state in 6-12 words
+- state: physical condition, energy level, and expression in 6-12 words, comma-separated tags
 
 Rules:
 - Use only English.
 - Be natural and specific.
+- Do NOT include nudity, partial undress, exposed skin focus, lingerie focus, or sexualized body description.
+- Do NOT repeat clothing, exact pose, or environment details already given.
+- Do NOT describe hair, skin tone, age, or ethnicity.
 - Each field must be comma-separated tags only. NO full sentences. NO periods.
-- Preserve compound terms as single tags. Examples: "weary delivery man", "sitting on crates", "downcast gaze".
-- Example good state: "weary delivery man, sitting on crates, downcast gaze, tired expression"
+- Preserve compound terms as single tags. Examples: "weary posture", "downcast gaze", "tired expression", "relaxed shoulders".
+- Example good state: "weary posture, downcast gaze, tired expression, relaxed hands"
 - Output only the JSON object, nothing else.
