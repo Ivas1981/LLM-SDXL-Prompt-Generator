@@ -51,6 +51,7 @@ class LMClient:
         self._token_attempted = False
         self._models_cache: dict[str, ModelInfo] | None = None
         self._query_embed_cache: EmbeddingCache = EmbeddingCache()
+        self.embedding_model_name = EMBEDDING_MODEL_NAME
 
     def _headers(self) -> dict[str, str]:
         if self.token:
@@ -274,11 +275,12 @@ class LMClient:
     def embed(
         self,
         inputs: list[str],
-        model: str = EMBEDDING_MODEL_NAME,
+        model: str | None = None,
     ) -> list[list[float]] | None:
         """Embeddings via OpenAI-compatible /v1/embeddings."""
         if requests is None:
             return None
+        model = model or self.embedding_model_name
         try:
             r = self._request(
                 "POST",
@@ -295,11 +297,14 @@ class LMClient:
             if item.get("embedding") is not None
         ]
 
+    def list_embedding_models(self) -> list[str]:
+        return [m.key for m in self.list_models_meta() if m.type == "embedding"]
+
     def has_embedding_model(self, models: list[str] | None = None) -> bool:
         if models is not None:
-            return any(EMBEDDING_MODEL_NAME in m for m in models)
+            return any(self.embedding_model_name in m for m in models)
         for m in self.list_models_meta():
-            if m.type == "embedding" and EMBEDDING_MODEL_NAME in m.key:
+            if m.type == "embedding" and self.embedding_model_name in m.key:
                 return True
         return False
 
@@ -309,7 +314,7 @@ class LMClient:
         Returns True if /v1/embeddings returns a non-empty vector. This
         warms up JIT loading and surfaces missing-model failures early.
         """
-        result = self.embed(["probe"], model=EMBEDDING_MODEL_NAME)
+        result = self.embed(["probe"], model=self.embedding_model_name)
         return bool(result and any(v for v in result))
 
     def max_similarity(self, query: str, candidates: list[str]) -> tuple[float, bool]:

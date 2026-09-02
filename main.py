@@ -47,6 +47,27 @@ def select_model(models: list[str]) -> str:
     return models[idx - 1]
 
 
+def select_embedding_model(lm: LMClient) -> str | None:
+    models = lm.list_embedding_models()
+    if not models:
+        print("No embedding models available in LM Studio.")
+        print("Semantic duplicate checks will be skipped; exact-name and exact-prompt checks still apply.")
+        return None
+
+    print("\n" + "=" * 60)
+    print("EMBEDDING MODELS")
+    print("=" * 60)
+    for i, m in enumerate(models, 1):
+        label = m if len(m) <= 50 else m[:47] + "..."
+        print(f"  [{i:2d}] {label}")
+    print("=" * 60)
+    idx = prompt_int("\nEmbedding model number (or 0 to skip semantic checks): ", 0, len(models))
+    if idx == 0:
+        print("Semantic duplicate checks will be skipped; exact-name and exact-prompt checks still apply.")
+        return None
+    return models[idx - 1]
+
+
 def connect_with_retry() -> LMClient:
     lm = LMClient()
     while True:
@@ -108,16 +129,6 @@ def run() -> int:
     except Exception as e:
         print(f"Warning: unload failed: {e}")
 
-    if lm.has_embedding_model():
-        print("Probing embedding model (may trigger JIT load)...")
-        if lm.probe_embedding_model():
-            print("Embedding model is responsive.")
-        else:
-            print("Warning: embedding model probe returned empty. Duplicate checks may silently degrade.")
-    else:
-        print(f"Warning: embedding model '{config.EMBEDDING_MODEL_NAME}' not found among downloaded models.")
-        print("Semantic duplicate checks will be skipped; exact-name and exact-prompt checks still apply.")
-
     model_name = select_model(models)
 
     try:
@@ -140,6 +151,18 @@ def run() -> int:
         else:
             print(f"Failed to load {model_name} after auth. Aborting.")
             return 1
+
+    embedding_name = select_embedding_model(lm)
+    if embedding_name:
+        lm.embedding_model_name = embedding_name
+        config.EMBEDDING_MODEL_NAME = embedding_name
+        print(f"Probing embedding model '{embedding_name}' (may trigger JIT load)...")
+        if lm.probe_embedding_model():
+            print("Embedding model is responsive.")
+        else:
+            print("Warning: embedding model probe returned empty. Duplicate checks may silently degrade.")
+    else:
+        print("Semantic duplicate checks will be skipped; exact-name and exact-prompt checks still apply.")
 
     target = prompt_int("\nHow many scenes to generate? (1-1000): ", 1, 1000)
     context_token = os.environ.get("CONTEXT_TOKEN", config.DEFAULT_CONTEXT_TOKEN)
