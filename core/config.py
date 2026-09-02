@@ -30,6 +30,9 @@ LM_STUDIO_MODELS_TIMEOUT = 30
 LM_STUDIO_CHAT_TIMEOUT = _env.get_int("CHAT_TIMEOUT")
 LM_STUDIO_EMBEDDING_TIMEOUT = 120
 
+DEBUG = _loader.resolve_debug()
+DEBUG_LOG_PATH = BASE_DIR / "debug.log"
+
 PIPELINE_STEPS = (
     "step1_concept.txt",
     "step2_environment.txt",

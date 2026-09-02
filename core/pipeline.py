@@ -17,7 +17,9 @@ from .config import (
     RECENT_NAMES_CONTEXT,
     MAX_ATTEMPTS_MULTIPLIER,
     UNIQUENESS_THRESHOLD,
+    DEBUG,
 )
+from .debug_log import get as get_debug
 
 STEP_PARAMS = {
     "step1_concept.txt": (0.9, 350),
@@ -61,15 +63,10 @@ def _format_user_hint(step_name: str, ctx: dict[str, str], existing_names: list[
     recent = "\n".join(f"- {n}" for n in existing_names[-RECENT_NAMES_CONTEXT:]) or "none"
     if not template:
         return ""
-    if not ctx:
-        return template.replace("{names}", recent) if "{names}" in template else ""
-    placeholder = "\x00NAMES\x00"
-    safe_template = template.replace("{names}", placeholder)
-    try:
-        formatted = safe_template.format(**ctx)
-    except KeyError:
-        formatted = safe_template
-    return formatted.replace(placeholder, recent)
+    result = template.replace("{names}", recent)
+    for key, value in ctx.items():
+        result = result.replace("{" + key + "}", value)
+    return result
 
 
 def _safe_name(raw: str, max_len: int = 60) -> str:
@@ -144,15 +141,23 @@ def run_pipeline(
     data: list[dict] | None = None,
 ) -> dict[str, Any] | None:
     ctx: dict[str, str] = {}
+    debug = get_debug() if DEBUG else None
 
     step1 = "step1_concept.txt"
     temp, max_tokens = STEP_PARAMS[step1]
-    response = lm.chat(model, prompts[step1], _format_user_hint(step1, ctx, existing_names), temperature=temp, max_tokens=max_tokens)
+    user = _format_user_hint(step1, ctx, existing_names)
+    if DEBUG and debug:
+        debug.log("PIPELINE_STEP", f"step=step1_concept\nuser={user}")
+    response = lm.chat(model, prompts[step1], user, temperature=temp, max_tokens=max_tokens)
+    if DEBUG and debug:
+        debug.log("PIPELINE_STEP_RESULT", f"step=step1_concept\nresponse={response}")
     if not response:
         return None
     ctx[step1.replace(".txt", "")] = response
 
     env_result = _run_environment_step(lm, model, prompts, ctx, existing_names)
+    if DEBUG and debug:
+        debug.log("PIPELINE_STEP_RESULT", f"step=step2_environment\nresult={env_result}")
     if not env_result:
         return None
     ctx[ENV_STEP.replace(".txt", "")] = json.dumps(env_result, ensure_ascii=False)
@@ -160,12 +165,16 @@ def run_pipeline(
     remaining_steps = [s for s in PIPELINE_STEPS[:-1] if s not in (step1, ENV_STEP)]
     for step in remaining_steps:
         response = _chat_with_retry(lm, model, prompts, step, ctx, existing_names, max_attempts=2)
+        if DEBUG and debug:
+            debug.log("PIPELINE_STEP_RESULT", f"step={step}\nresponse={response}")
         if not response:
             return None
         ctx[step.replace(".txt", "")] = response
 
     assemble_response = ctx["step7_assemble"]
     parsed = extract_json_object(assemble_response or "")
+    if DEBUG and debug:
+        debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
     if not isinstance(parsed, dict):
         return None
 
@@ -183,6 +192,8 @@ def run_pipeline(
     neg = assemble_negative(parts)
 
     err = validate_result({"prompt": pos, "negative_prompt": neg})
+    if DEBUG and debug:
+        debug.log("PIPELINE_VALIDATE", f"err={err}\npositive={pos}\nnegative={neg}")
     if err:
         return None
 
@@ -195,6 +206,8 @@ def run_pipeline(
         existing_names,
         max_attempts=2,
     )
+    if DEBUG and debug:
+        debug.log("PIPELINE_STEP_RESULT", f"step=step8_name\nresponse={name_resp}")
 
     scene_name = _safe_name(name_resp or "")
     if not scene_name or scene_name == "scene":
@@ -222,6 +235,8 @@ def run_pipeline(
             existing_names,
             max_attempts=2,
         )
+        if DEBUG and debug:
+            debug.log("PIPELINE_STEP_RESULT", f"step=step8_name_retry\nresponse={name_resp}")
         scene_name = _safe_name(name_resp or "")
         if not scene_name or scene_name == "scene":
             subject_words = (parts.get("subject") or "").split(",")[0].strip()
@@ -257,6 +272,8 @@ def run_pipeline(
     }
 
     result["_scene_name"] = scene_name
+    if DEBUG and debug:
+        debug.log("PIPELINE_RESULT", f"scene_name={scene_name}\nresult={result}")
     return result
 
 
@@ -281,6 +298,9 @@ def generate_batch(
     max_attempts = max(1, target_count * MAX_ATTEMPTS_MULTIPLIER)
     next_number = _seed_number(data)
     cache = EmbeddingCache()
+    debug = get_debug() if DEBUG else None
+    if DEBUG and debug:
+        debug.log("BATCH_START", f"target={target_count}\nmax_attempts={max_attempts}\nnext_number={next_number}")
 
     while added < target_count and attempts < max_attempts:
         attempts += 1
@@ -289,27 +309,23 @@ def generate_batch(
             on_progress(added, target_count, attempts)
 
         result = run_pipeline(lm, model, prompts, existing_names, context_token, data=data)
+        if DEBUG and debug:
+            debug.log("BATCH_ATTEMPT", f"attempt={attempts}\nadded={added}\nresult={'ok' if result else 'None'}")
         if not result:
             continue
 
-        # Reserve a name slot only for entries that pass all checks. The
-        # scene_name is built from the current next_number, which is
-        # incremented only when the entry is actually appended below.
         scene_name = f"{next_number:02d}_{result['_scene_name']}"
 
-        # Exact-match prompt duplicate check (cheap, no LLM call). Name collision is
-        # impossible because next_number is incremented before this point and yields
-        # a unique "{NN}_{...}" prefix.
         conflict = storage.find_duplicate(
             data,
             name=None,
             prompt=result["prompt"],
         )
         if conflict:
-            print(f"[skip] scene '{scene_name}' has duplicate {conflict}")
+            if DEBUG and debug:
+                debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=duplicate_prompt\nconflict={conflict}")
             continue
 
-        # Semantic similarity check via embedding cache.
         concept = " ".join(
             str(result["_parts"].get(k, ""))
             for k in ("subject", "pose", "state", "environment")
@@ -317,13 +333,13 @@ def generate_batch(
         existing_concepts = storage.prompts(data)
         score, key = lm.max_similarity_with_cache(concept, existing_concepts, cache)
         if not existing_concepts:
-            pass  # First scene, nothing to compare.
+            pass
         elif score == 0.0 and key is None:
-            print(f"[warn] embeddings unavailable for scene '{scene_name}'; "
-                  "semantic dup-check skipped")
+            if DEBUG and debug:
+                debug.log("BATCH_WARN", f"scene={scene_name}\nembeddings_unavailable")
         elif score > UNIQUENESS_THRESHOLD:
-            print(f"[skip] scene '{scene_name}' too similar to existing "
-                  f"(score={score:.2f})")
+            if DEBUG and debug:
+                debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=too_similar\nscore={score:.2f}")
             continue
 
         data.append({
@@ -334,9 +350,14 @@ def generate_batch(
         added += 1
         next_number += 1
 
+        if DEBUG and debug:
+            debug.log("BATCH_ADD", f"scene={scene_name}\nadded={added}\nattempts={attempts}")
+
         if save_path is not None:
             storage.save(save_path, data)
 
+    if DEBUG and debug:
+        debug.log("BATCH_END", f"added={added}\nattempts={attempts}\ntarget={target_count}")
     return added
 
 

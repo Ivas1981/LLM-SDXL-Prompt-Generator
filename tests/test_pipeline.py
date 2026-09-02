@@ -26,6 +26,14 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("old1", result)
         self.assertIn("old2", result)
 
+    def test_format_user_hint_handles_braces_in_context(self):
+        from core.pipeline import _format_user_hint
+        step_name = "step2_environment.txt"
+        ctx = {"step1_concept": "cyberpunk {neon} city"}
+        result = _format_user_hint(step_name, ctx, [])
+        self.assertIn("cyberpunk {neon} city", result)
+        self.assertNotIn("{step1_concept}", result)
+
     def test_safe_name_cleans_string(self):
         from core.pipeline import _safe_name
         self.assertEqual(_safe_name("Hello World! 123"), "hello_world_123")

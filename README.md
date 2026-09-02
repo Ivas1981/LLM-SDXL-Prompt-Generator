@@ -84,6 +84,7 @@ for entry in describe():
 | `NEGATIVE_BASE_TAGS` | str | `""` | Extra baseline tags for the negative prompt |
 | `LM_STUDIO_LOG_ROOT` | path | `~/.lmstudio/server-logs` | Used by `lm_logs.py` |
 | `PROMPTGEN_CONFIG` | path | `./config.toml` | Override config.toml location |
+| `DEBUG` | bool | `off` | Write requests, responses, and errors to `debug.log` |
 
 ### `config.toml` example
 
@@ -95,7 +96,22 @@ gitignored because it may contain `api_token`.
 url = "http://localhost:1234/api/v1"
 openai_url = "http://localhost:1234/v1"
 api_token = ""
+debug = false
 ```
+
+## Debug logging
+
+Set `DEBUG=on` in the environment or `debug = true` in `config.toml` to append
+detailed logs to `debug.log` in the project root. Each entry includes:
+
+- chat requests (model, system prompt, user prompt, payload)
+- chat responses
+- HTTP request/response details
+- pipeline step results and validation errors
+- batch start/end, skip reasons, and added scenes
+
+This is useful for diagnosing issues like premature termination or malformed
+LLM outputs.
 
 ## Test
 

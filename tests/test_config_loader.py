@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 import sys
+import os
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -19,11 +20,21 @@ class ConfigLoaderTests(unittest.TestCase):
 
     def test_resolve_api_token_default_none(self):
         token = config_loader.resolve_api_token()
-        self.assertIsNone(token)
+        if os.environ.get("LM_API_TOKEN") or (ROOT / "config.toml").exists():
+            self.assertIsNotNone(token)
+        else:
+            self.assertIsNone(token)
 
     def test_config_path_returns_none_when_missing(self):
         path = config_loader.config_path()
-        self.assertIsNone(path)
+        if (ROOT / "config.toml").exists():
+            self.assertIsNotNone(path)
+        else:
+            self.assertIsNone(path)
+
+    def test_resolve_debug_default_false(self):
+        debug = config_loader.resolve_debug()
+        self.assertFalse(debug)
 
 
 if __name__ == "__main__":

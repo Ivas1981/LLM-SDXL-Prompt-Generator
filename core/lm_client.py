@@ -19,7 +19,9 @@ from .config import (
     LM_STUDIO_EMBEDDING_TIMEOUT,
     UNIQUENESS_THRESHOLD,
     DEFAULT_CONTEXT_LENGTH,
+    DEBUG,
 )
+from .debug_log import get as get_debug
 
 
 class AuthRequired(Exception):
@@ -67,12 +69,19 @@ class LMClient:
         headers = dict(kwargs.pop("headers", {}) or {})
         headers.update(self._headers())
         url = f"{base or self.url}{endpoint}"
+        debug = get_debug()
+        if DEBUG and debug:
+            debug.log("REQUEST", f"{method} {url}\nheaders={headers}\nkwargs={kwargs}")
         try:
             response = requests.request(method, url, headers=headers, **kwargs)
         except Exception as e:
+            if DEBUG and debug:
+                debug.log("REQUEST_ERROR", f"{method} {url}\nerror={e}")
             raise RuntimeError(f"Network error: {e}") from e
         if response.status_code == 401 and not self._token_attempted:
             raise AuthRequired("LM Studio requires authentication (401).")
+        if DEBUG and debug:
+            debug.log("RESPONSE", f"{method} {url} -> {response.status_code}\n{response.text[:4000]}")
         response.raise_for_status()
         return response
 
@@ -236,6 +245,10 @@ class LMClient:
         if reasoning is not None:
             payload["reasoning"] = reasoning
 
+        debug = get_debug()
+        if DEBUG and debug:
+            debug.log("CHAT_REQUEST", f"model={model}\nsystem={system[:500]}\nuser={user[:500]}\npayload={payload}")
+
         try:
             r = self._request(
                 "POST",
@@ -243,7 +256,9 @@ class LMClient:
                 json=payload,
                 timeout=LM_STUDIO_CHAT_TIMEOUT,
             )
-        except Exception:
+        except Exception as e:
+            if DEBUG and debug:
+                debug.log("CHAT_ERROR", f"model={model}\nerror={e}")
             return None
 
         data = r.json()
@@ -251,6 +266,8 @@ class LMClient:
             if item.get("type") == "message":
                 content = item.get("content")
                 if content:
+                    if DEBUG and debug:
+                        debug.log("CHAT_RESPONSE", f"model={model}\ncontent={content[:4000]}")
                     return content.strip()
         return None
 

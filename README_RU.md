@@ -84,6 +84,7 @@ for entry in describe():
 | `NEGATIVE_BASE_TAGS` | str | `""` | Дополнительные базовые теги для негативного промпта |
 | `LM_STUDIO_LOG_ROOT` | path | `~/.lmstudio/server-logs` | Используется `lm_logs.py` |
 | `PROMPTGEN_CONFIG` | path | `./config.toml` | Переопределить расположение config.toml |
+| `DEBUG` | bool | `off` | Записывать запросы, ответы и ошибки в `debug.log` |
 
 ### Пример `config.toml`
 
@@ -95,7 +96,22 @@ for entry in describe():
 url = "http://localhost:1234/api/v1"
 openai_url = "http://localhost:1234/v1"
 api_token = ""
+debug = false
 ```
+
+## Отладка
+
+Установите `DEBUG=on` в окружении или `debug = true` в `config.toml`, чтобы
+дописывать детальные логи в `debug.log` в корне проекта. В лог попадают:
+
+- chat-запросы (модель, system, user, payload)
+- chat-ответы
+- HTTP-запросы/ответы
+- результаты шагов пайплайна и ошибки валидации
+- старт/окончание батча, причины пропусков, добавленные сцены
+
+Это удобно для диагностики преждевременной остановки или некорректных
+ответов модели.
 
 ## Тесты
 

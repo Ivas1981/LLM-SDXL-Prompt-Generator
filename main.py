@@ -10,6 +10,7 @@ from core import config
 from core.lm_client import LMClient, AuthRequired
 from core.pipeline import generate_batch, load_system_prompts
 from core import storage
+from core.debug_log import init as init_debug
 import env_registry
 
 
@@ -76,6 +77,10 @@ def run() -> int:
         print(f"Using config: {cfg_path}")
     else:
         print("No config.toml found, using env / defaults.")
+
+    init_debug(config.DEBUG, config.DEBUG_LOG_PATH)
+    if config.DEBUG:
+        print(f"Debug logging enabled: {config.DEBUG_LOG_PATH}")
 
     prompts_dir = config.PROMPTS_DIR
     if not prompts_dir.exists():

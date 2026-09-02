@@ -19,3 +19,6 @@
 # Bearer token for LM Studio's auth feature (Developer → Server Settings).
 # Leave empty to be prompted interactively on a 401 response.
 # api_token = ""
+
+# Debug logging. Write requests, responses, and errors to debug.log.
+# debug = false

@@ -105,6 +105,10 @@ ENV_SPEC: dict[str, EnvSpec] = {
         "OUTPUT_JSON", "", _str(""),
         "Output JSON file path. Empty = <project>/sdxl_styles.json.",
     ),
+    "DEBUG": EnvSpec(
+        "DEBUG", "off", _str("off"),
+        "Enable debug logging to debug.log. Values: on/off.",
+    ),
     "EMBEDDING_MODEL_NAME": EnvSpec(
         "EMBEDDING_MODEL_NAME", "text-embedding-all-minilm-l6-v2", _str("text-embedding-all-minilm-l6-v2"),
         "Embedding model name used for semantic duplicate checks.",

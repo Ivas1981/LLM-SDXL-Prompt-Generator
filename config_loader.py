@@ -96,6 +96,21 @@ def resolve_api_token() -> str | None:
     return None
 
 
+def resolve_debug() -> bool:
+    env = env_registry.get_str("DEBUG")
+    if env:
+        return env.lower() in ("on", "1", "true", "yes")
+    path = _resolve_config_path()
+    if path:
+        cfg = _load_toml(path)
+        v = _get(cfg, "lm_studio", "debug")
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("on", "1", "true", "yes")
+    return False
+
+
 def config_path() -> Path | None:
     """Return the path of the loaded config file, or None if absent."""
     return _resolve_config_path()
