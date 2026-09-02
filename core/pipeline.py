@@ -37,7 +37,6 @@ STEP_USER_HINT = {
     "step1_concept.txt": "Generate a new concept. Avoid the following existing concepts:\n{names}",
     "step2_environment.txt": "Concept: {step1_concept}. Generate a detailed environment.",
     "step3_pose.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nGenerate clothing and pose (eye contact with camera required).",
-    "step4_state.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nDescribe a natural way the scene includes partial or full nudity.",
     "step5_lighting.txt": "Environment: {step2_environment}\nDescribe concrete physical lighting for the scene.",
     "step6_camera.txt": "Scene so far: {step1_concept}, {step2_environment}, {step3_pose}, {step4_state}, {step5_lighting}\nDescribe the technical camera parameters.",
     "step7_assemble.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nState: {step4_state}\nLighting: {step5_lighting}\nCamera: {step6_camera}\nAssemble the final JSON for SDXL.",
@@ -65,6 +64,12 @@ def load_system_prompts(prompts_dir: Path) -> dict[str, str]:
 
 def _format_user_hint(step_name: str, ctx: dict[str, str], existing_names: list[str]) -> str:
     template = STEP_USER_HINT.get(step_name, "")
+    if step_name == "step4_state.txt":
+        template = (
+            "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nDescribe a natural way the scene includes partial or full nudity."
+            if NSFW
+            else "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nDescribe the physical state and natural expression."
+        )
     recent = "\n".join(f"- {n}" for n in existing_names[-RECENT_NAMES_CONTEXT:]) or "none"
     if not template:
         return ""
@@ -88,6 +93,18 @@ ENV_MAX_RETRIES = 3
 
 def _chat_step(lm: LMClient, model: str, system: str, user: str, temp: float, max_tokens: int) -> str | None:
     return lm.chat(model, system, user, temperature=temp, max_tokens=max_tokens)
+
+
+def _build_parts(cleaned_parsed: dict[str, Any]) -> dict[str, str]:
+    return {
+        "subject": cleaned_parsed.get("subject") or cleaned_parsed.get("prompt_subject") or "",
+        "pose": cleaned_parsed.get("pose") or "",
+        "state": cleaned_parsed.get("state") or (cleaned_parsed.get("nudity") if NSFW else "") or "",
+        "environment": cleaned_parsed.get("environment") or cleaned_parsed.get("setting") or "",
+        "relationships": cleaned_parsed.get("relationships") or cleaned_parsed.get("spatial") or "",
+        "lighting": cleaned_parsed.get("lighting") or "",
+        "camera": cleaned_parsed.get("camera") or "",
+    }
 
 
 def _chat_with_retry(
@@ -207,15 +224,7 @@ def run_pipeline(
 
     cleaned_parsed = clean_step_fields(parsed)
 
-    parts = {
-        "subject": cleaned_parsed.get("subject") or cleaned_parsed.get("prompt_subject") or "",
-        "pose": cleaned_parsed.get("pose") or "",
-        "state": cleaned_parsed.get("state") or cleaned_parsed.get("nudity") or "",
-        "environment": cleaned_parsed.get("environment") or cleaned_parsed.get("setting") or "",
-        "relationships": cleaned_parsed.get("relationships") or cleaned_parsed.get("spatial") or "",
-        "lighting": cleaned_parsed.get("lighting") or "",
-        "camera": cleaned_parsed.get("camera") or "",
-    }
+    parts = _build_parts(cleaned_parsed)
 
     pos = assemble_positive(parts, context_token=context_token)
     neg = assemble_negative(parts)

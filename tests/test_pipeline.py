@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from core.lm_client import LMClient
-from core.pipeline import load_system_prompts
+from core.pipeline import load_system_prompts, _format_user_hint, _build_parts
 from core import storage
 
 
@@ -46,6 +46,29 @@ class PipelineTests(unittest.TestCase):
         from core.pipeline import _safe_name
         self.assertEqual(_safe_name("Hello World! 123"), "hello_world_123")
         self.assertEqual(_safe_name(""), "scene")
+
+    def test_step4_user_hint_nsfw_includes_nudity(self):
+        with unittest.mock.patch("core.pipeline.NSFW", True):
+            hint = _format_user_hint("step4_state.txt", {"step1_concept": "c", "step2_environment": "e", "step3_pose": "p"}, [])
+        self.assertIn("partial or full nudity", hint)
+
+    def test_step4_user_hint_sfw_excludes_nudity(self):
+        with unittest.mock.patch("core.pipeline.NSFW", False):
+            hint = _format_user_hint("step4_state.txt", {"step1_concept": "c", "step2_environment": "e", "step3_pose": "p"}, [])
+        self.assertIn("physical state and natural expression", hint)
+        self.assertNotIn("nudity", hint)
+
+    def test_build_parts_sfw_ignores_nudity(self):
+        parsed = {"state": "", "nudity": "bare chest"}
+        with unittest.mock.patch("core.pipeline.NSFW", False):
+            parts = _build_parts(parsed)
+        self.assertEqual(parts["state"], "")
+
+    def test_build_parts_nsfw_uses_nudity_fallback(self):
+        parsed = {"state": "", "nudity": "bare chest"}
+        with unittest.mock.patch("core.pipeline.NSFW", True):
+            parts = _build_parts(parsed)
+        self.assertEqual(parts["state"], "bare chest")
 
     def test_generate_batch_adds_entries(self):
         import unittest.mock as mock

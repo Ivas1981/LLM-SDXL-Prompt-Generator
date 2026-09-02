@@ -14,11 +14,6 @@
 - `config.toml.example` now includes `[generation]` section with `nsfw` and `models_timeout`
 - Negative prompt baseline now covers common SDXL artifacts by default
 
-### Fixed
-- `_clean_field()` no longer over-splits compound terms in prose mode
-- Debug logging no longer overwrites `debug.log` unexpectedly
-- Config loading derives OpenAI URL from native LM Studio URL when `openai_url` is missing
-
 ## [1.1.0] - 2026-09-02
 
 ### Added

@@ -16,6 +16,7 @@ uniqueness via embeddings.
 - Configurable via environment variables or `config.toml`
 - Cross-field and within-field tag deduplication
 - Retry reason logging for failed pipeline steps and batch skips
+- SFW/NSFW mode toggle via `nsfw` in `config.toml` or `NSFW` env var
 
 ## Project layout
 
@@ -84,6 +85,7 @@ for entry in describe():
 | `CHAT_TIMEOUT` | int | `600` | Seconds |
 | `LM_CONTEXT_LENGTH` | int | `8192` | Sent to `/api/v1/models/load` |
 | `NEGATIVE_BASE_TAGS` | str | built-in default | Baseline tags for the negative prompt; configurable via env or `config.toml` |
+| `NSFW` | bool | `false` | When `true`, step 4 includes an additional `nudity` field in the output |
 | `LM_STUDIO_LOG_ROOT` | path | `~/.lmstudio/server-logs` | Used by `lm_logs.py` |
 | `PROMPTGEN_CONFIG` | path | `./config.toml` | Override config.toml location |
 | `DEBUG` | bool | `off` | Write requests, responses, and errors to `debug.log` |
@@ -140,8 +142,7 @@ python -m unittest discover tests
   positive and negative prompts; the LLM never assembles the final strings.
 - Quality-bait tags (`masterpiece`, `8k`, `ultra detailed`, `HDR`, ...) are
   stripped from the positive prompt before it is saved.
-- Negative prompt starts empty; per-scene context adds only the relevant
-  opposites (e.g. `daylight` for night scenes).
+- Negative prompt starts with a built-in baseline of common SDXL artifacts and per-scene opposites (e.g. `daylight` for night scenes).
 - LM Studio auth: the script reads `LM_API_TOKEN` from the environment, and if
   the server responds `401` it asks for a token once per run.
 - JSON output is written atomically (`tempfile` + `os.replace`).
