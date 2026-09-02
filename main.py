@@ -206,6 +206,11 @@ def run() -> int:
     if debug:
         debug.close()
 
+    try:
+        input("Press any key to exit...")
+    except Exception:
+        pass
+
     return 0
 
 

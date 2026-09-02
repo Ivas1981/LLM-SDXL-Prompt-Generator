@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0] - 2026-09-02
+
+### Added
+- `prompts/step7_post_process.txt` for automatic prompt refinement after step7 assembly
+- Automatic model marker insertion as first JSON entry (`name` = model, empty `positive`/`negative`)
+- Per-step and total generation timing printed to console
+- Pause-before-exit prompt in `main.py`
+
+### Changed
+- Step7 assembly is always followed by local-model post-processing (no config flag)
+- JSON output prepends model-only entry when file is empty or missing that model marker
+- Batch and pipeline timing reported via `[timing]` lines
+- Console remains open until user presses a key after generation completes
+
 ## [1.2.0] - 2026-09-02
 
 ### Added

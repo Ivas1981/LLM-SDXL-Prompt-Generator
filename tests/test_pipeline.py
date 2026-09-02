@@ -15,8 +15,9 @@ class PipelineTests(unittest.TestCase):
     def test_load_system_prompts(self):
         prompts_dir = ROOT / "prompts"
         prompts = load_system_prompts(prompts_dir)
-        self.assertEqual(len(prompts), 8)
+        self.assertEqual(len(prompts), 9)
         self.assertIn("step1_concept.txt", prompts)
+        self.assertIn("step7_post_process.txt", prompts)
 
     def test_load_system_prompts_sfw_replaces_state_prompt(self):
         prompts_dir = ROOT / "prompts"
@@ -134,8 +135,66 @@ class PipelineTests(unittest.TestCase):
                     )
             self.assertEqual(added, 1)
             data = storage.load_or_init(tmp_path)
-            self.assertEqual(len(data), 1)
-            self.assertEqual(data[0]["name"], "01_test_scene")
+            self.assertEqual(len(data), 2)
+            self.assertEqual(data[0]["name"], "m")
+            self.assertEqual(data[0]["positive"], "")
+            self.assertEqual(data[0]["negative"], "")
+            self.assertEqual(data[1]["name"], "01_test_scene")
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+    def test_post_process_with_local_model_updates_prompts(self):
+        from core.pipeline import _post_process_with_local_model
+        lm = unittest.mock.Mock()
+        lm.chat.return_value = '{"positive": "a, b", "negative": "c, d"}'
+        pos, neg = _post_process_with_local_model(lm, "model", "system", "a, a, b", "c, c, d")
+        self.assertEqual(pos, "a, b")
+        self.assertEqual(neg, "c, d")
+
+    def test_generate_batch_skips_duplicate_model_marker(self):
+        import unittest.mock as mock
+        from core.lm_client import LMClient
+        from core.pipeline import generate_batch
+
+        lm = LMClient()
+        prompts = {f"step{i}_concept.txt": f"prompt{i}" for i in range(1, 9)}
+        prompts["step2_environment.txt"] = "env"
+        prompts["step3_pose.txt"] = "pose"
+        prompts["step4_state.txt"] = "state"
+        prompts["step5_lighting.txt"] = "light"
+        prompts["step6_camera.txt"] = "cam"
+        prompts["step7_assemble.txt"] = '{"subject": "x", "pose": "y", "state": "z", "environment": "w", "relationships": "r", "lighting": "l", "camera": "c"}'
+        prompts["step8_name.txt"] = "test_scene"
+
+        fake_result = {
+            "prompt": "test prompt",
+            "negative_prompt": "neg",
+            "_parts": {"subject": "x", "pose": "y", "state": "z", "environment": "w", "relationships": "r", "lighting": "l", "camera": "c"},
+            "_raw_assembled": {"prompt": "", "negative_prompt": ""},
+            "_name_raw": "test_scene",
+            "_scene_name": "test_scene",
+        }
+
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+
+        try:
+            with mock.patch("core.pipeline.run_pipeline", return_value=(fake_result, None)):
+                with mock.patch.object(lm, "max_similarity_with_cache", return_value=(0.0, None)):
+                    added = generate_batch(
+                        lm=lm,
+                        model="existing-model",
+                        prompts=prompts,
+                        data=[{"name": "existing-model", "positive": "", "negative": ""}],
+                        target_count=1,
+                        on_progress=None,
+                        save_path=tmp_path,
+                    )
+            self.assertEqual(added, 1)
+            data = storage.load_or_init(tmp_path)
+            self.assertEqual(len(data), 2)
+            self.assertEqual(data[0]["name"], "existing-model")
+            self.assertEqual(data[1]["name"], "01_test_scene")
         finally:
             tmp_path.unlink(missing_ok=True)
 

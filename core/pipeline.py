@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,10 @@ def load_system_prompts(prompts_dir: Path) -> dict[str, str]:
         if nsfw_assemble.exists():
             prompts["step7_assemble.txt"] = _read_prompt(nsfw_assemble)
 
+    post_process = prompts_dir / "step7_post_process.txt"
+    if post_process.exists():
+        prompts["step7_post_process.txt"] = _read_prompt(post_process)
+
     return prompts
 
 
@@ -111,6 +116,19 @@ def _build_parts(cleaned_parsed: dict[str, Any]) -> dict[str, str]:
         "lighting": cleaned_parsed.get("lighting") or "",
         "camera": cleaned_parsed.get("camera") or "",
     }
+
+
+def _post_process_with_local_model(lm: LMClient, model: str, system: str, positive: str, negative: str) -> tuple[str, str]:
+    user = f"Positive prompt:\n{positive}\n\nNegative prompt:\n{negative}\n\nRefine both prompts and return JSON."
+    response = lm.chat(model, system, user, temperature=0.2, max_tokens=700)
+    if not response:
+        return positive, negative
+    parsed = extract_json_object(response)
+    if not isinstance(parsed, dict):
+        return positive, negative
+    new_pos = parsed.get("positive") or positive
+    new_neg = parsed.get("negative") or negative
+    return new_pos, new_neg
 
 
 def _chat_with_retry(
@@ -190,89 +208,71 @@ def run_pipeline(
 ) -> tuple[dict[str, Any] | None, str | None]:
     ctx: dict[str, str] = {}
     debug = get_debug() if DEBUG else None
-
-    step1 = "step1_concept.txt"
-    temp, max_tokens = STEP_PARAMS[step1]
-    user = _format_user_hint(step1, ctx, existing_names)
-    if DEBUG and debug:
-        debug.log("PIPELINE_STEP", f"step=step1_concept\nuser={user}")
-    response = lm.chat(model, prompts[step1], user, temperature=temp, max_tokens=max_tokens)
-    if DEBUG and debug:
-        debug.log("PIPELINE_STEP_RESULT", f"step=step1_concept\nresponse={response}")
-    if not response:
-        return None, "empty response (step1)"
-    ctx[step1.replace(".txt", "")] = clean_step_json(response)
-
-    env_result, env_reason = _run_environment_step(lm, model, prompts, ctx, existing_names)
-    if DEBUG and debug:
-        debug.log("PIPELINE_STEP_RESULT", f"step=step2_environment\nresult={env_result}")
-    if not env_result:
-        return None, env_reason or "environment step failed"
-    ctx[ENV_STEP.replace(".txt", "")] = json.dumps(clean_step_fields(env_result), ensure_ascii=False)
-
-    remaining_steps = [s for s in PIPELINE_STEPS[:-1] if s not in (step1, ENV_STEP)]
-    for step in remaining_steps:
-        response = _chat_with_retry(lm, model, prompts, step, ctx, existing_names, max_attempts=2)
+    t0 = time.perf_counter()
+    try:
+        step1 = "step1_concept.txt"
+        temp, max_tokens = STEP_PARAMS[step1]
+        user = _format_user_hint(step1, ctx, existing_names)
         if DEBUG and debug:
-            debug.log("PIPELINE_STEP_RESULT", f"step={step}\nresponse={response}")
+            debug.log("PIPELINE_STEP", f"step=step1_concept\nuser={user}")
+        step_start = time.perf_counter()
+        response = lm.chat(model, prompts[step1], user, temperature=temp, max_tokens=max_tokens)
+        print(f"[timing] step1: {time.perf_counter() - step_start:.2f}s")
+        if DEBUG and debug:
+            debug.log("PIPELINE_STEP_RESULT", f"step=step1_concept\nresponse={response}")
         if not response:
-            return None, f"empty response ({step})"
-        ctx[step.replace(".txt", "")] = clean_step_json(response)
+            return None, "empty response (step1)"
+        ctx[step1.replace(".txt", "")] = clean_step_json(response)
 
-    assemble_response = ctx["step7_assemble"]
-    parsed = extract_json_object(assemble_response or "")
-    if DEBUG and debug:
-        debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
-    if not isinstance(parsed, dict):
+        step_start = time.perf_counter()
+        env_result, env_reason = _run_environment_step(lm, model, prompts, ctx, existing_names)
+        print(f"[timing] step2: {time.perf_counter() - step_start:.2f}s")
+        if DEBUG and debug:
+            debug.log("PIPELINE_STEP_RESULT", f"step=step2_environment\nresult={env_result}")
+        if not env_result:
+            return None, env_reason or "environment step failed"
+        ctx[ENV_STEP.replace(".txt", "")] = json.dumps(clean_step_fields(env_result), ensure_ascii=False)
+
+        remaining_steps = [s for s in PIPELINE_STEPS[:-1] if s not in (step1, ENV_STEP)]
+        for step in remaining_steps:
+            step_start = time.perf_counter()
+            response = _chat_with_retry(lm, model, prompts, step, ctx, existing_names, max_attempts=2)
+            print(f"[timing] {step}: {time.perf_counter() - step_start:.2f}s")
+            if DEBUG and debug:
+                debug.log("PIPELINE_STEP_RESULT", f"step={step}\nresponse={response}")
+            if not response:
+                return None, f"empty response ({step})"
+            ctx[step.replace(".txt", "")] = clean_step_json(response)
+
+        assemble_response = ctx["step7_assemble"]
+        parsed = extract_json_object(assemble_response or "")
         if DEBUG and debug:
             debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
-        return None, "step7 invalid json"
+        if not isinstance(parsed, dict):
+            if DEBUG and debug:
+                debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
+            return None, "step7 invalid json"
 
-    cleaned_parsed = clean_step_fields(parsed)
+        cleaned_parsed = clean_step_fields(parsed)
 
-    parts = _build_parts(cleaned_parsed)
+        parts = _build_parts(cleaned_parsed)
 
-    pos = assemble_positive(parts, context_token=context_token)
-    neg = assemble_negative(parts)
+        pos = assemble_positive(parts, context_token=context_token)
+        neg = assemble_negative(parts)
 
-    err = validate_result({"prompt": pos, "negative_prompt": neg})
-    if DEBUG and debug:
-        debug.log("PIPELINE_VALIDATE", f"err={err}\npositive={pos}\nnegative={neg}")
-    if err:
-        return None, f"validation failed: {err}"
+        post_process_system = prompts.get("step7_post_process.txt")
+        if post_process_system:
+            step_start = time.perf_counter()
+            pos, neg = _post_process_with_local_model(lm, model, post_process_system, pos, neg)
+            print(f"[timing] step7_post_process: {time.perf_counter() - step_start:.2f}s")
 
-    name_resp = _chat_with_retry(
-        lm,
-        model,
-        prompts,
-        "step8_name.txt",
-        ctx,
-        existing_names,
-        max_attempts=2,
-    )
-    if DEBUG and debug:
-        debug.log("PIPELINE_STEP_RESULT", f"step=step8_name\nresponse={name_resp}")
+        err = validate_result({"prompt": pos, "negative_prompt": neg})
+        if DEBUG and debug:
+            debug.log("PIPELINE_VALIDATE", f"err={err}\npositive={pos}\nnegative={neg}")
+        if err:
+            return None, f"validation failed: {err}"
 
-    if not name_resp:
-        return None, "empty response (step8)"
-
-    scene_name = _safe_name(name_resp or "")
-    if not scene_name or scene_name == "scene":
-        subject_words = (parts.get("subject") or "").split(",")[0].strip()
-        environment_words = (parts.get("environment") or "").split(",")[0].strip()
-        fallback = "_".join(filter(None, [subject_words, environment_words]))
-        scene_name = _safe_name(fallback or "scene")
-
-    for _ in range(3):
-        conflict = False
-        if data:
-            for item in data:
-                existing_name = str(item.get("name", ""))
-                if existing_name == scene_name or existing_name.endswith("_" + scene_name):
-                    conflict = True
-                    break
-        if not conflict:
-            break
+        step_start = time.perf_counter()
         name_resp = _chat_with_retry(
             lm,
             model,
@@ -282,46 +282,83 @@ def run_pipeline(
             existing_names,
             max_attempts=2,
         )
+        print(f"[timing] step8: {time.perf_counter() - step_start:.2f}s")
         if DEBUG and debug:
-            debug.log("PIPELINE_STEP_RESULT", f"step=step8_name_retry\nresponse={name_resp}")
+            debug.log("PIPELINE_STEP_RESULT", f"step=step8_name\nresponse={name_resp}")
+
+        if not name_resp:
+            return None, "empty response (step8)"
+
         scene_name = _safe_name(name_resp or "")
         if not scene_name or scene_name == "scene":
             subject_words = (parts.get("subject") or "").split(",")[0].strip()
             environment_words = (parts.get("environment") or "").split(",")[0].strip()
             fallback = "_".join(filter(None, [subject_words, environment_words]))
             scene_name = _safe_name(fallback or "scene")
-    else:
-        base = scene_name or "scene"
-        idx = 1
-        while True:
-            candidate = f"{base}_{idx}"
+
+        for _ in range(3):
             conflict = False
             if data:
                 for item in data:
                     existing_name = str(item.get("name", ""))
-                    if existing_name == candidate or existing_name.endswith("_" + candidate):
+                    if existing_name == scene_name or existing_name.endswith("_" + scene_name):
                         conflict = True
                         break
             if not conflict:
                 break
-            idx += 1
-        scene_name = f"{base}_{idx}"
+            step_start = time.perf_counter()
+            name_resp = _chat_with_retry(
+                lm,
+                model,
+                prompts,
+                "step8_name.txt",
+                ctx,
+                existing_names,
+                max_attempts=2,
+            )
+            print(f"[timing] step8_retry: {time.perf_counter() - step_start:.2f}s")
+            if DEBUG and debug:
+                debug.log("PIPELINE_STEP_RESULT", f"step=step8_name_retry\nresponse={name_resp}")
+            scene_name = _safe_name(name_resp or "")
+            if not scene_name or scene_name == "scene":
+                subject_words = (parts.get("subject") or "").split(",")[0].strip()
+                environment_words = (parts.get("environment") or "").split(",")[0].strip()
+                fallback = "_".join(filter(None, [subject_words, environment_words]))
+                scene_name = _safe_name(fallback or "scene")
+        else:
+            base = scene_name or "scene"
+            idx = 1
+            while True:
+                candidate = f"{base}_{idx}"
+                conflict = False
+                if data:
+                    for item in data:
+                        existing_name = str(item.get("name", ""))
+                        if existing_name == candidate or existing_name.endswith("_" + candidate):
+                            conflict = True
+                            break
+                if not conflict:
+                    break
+                idx += 1
+            scene_name = f"{base}_{idx}"
 
-    result = {
-        "prompt": pos,
-        "negative_prompt": neg,
-        "_parts": parts,
-        "_raw_assembled": {
-            "prompt": parsed.get("prompt", ""),
-            "negative_prompt": parsed.get("negative_prompt", ""),
-        },
-        "_name_raw": name_resp or "",
-    }
+        result = {
+            "prompt": pos,
+            "negative_prompt": neg,
+            "_parts": parts,
+            "_raw_assembled": {
+                "prompt": parsed.get("prompt", ""),
+                "negative_prompt": parsed.get("negative_prompt", ""),
+            },
+            "_name_raw": name_resp or "",
+        }
 
-    result["_scene_name"] = scene_name
-    if DEBUG and debug:
-        debug.log("PIPELINE_RESULT", f"scene_name={scene_name}\nresult={result}")
-    return result, None
+        result["_scene_name"] = scene_name
+        if DEBUG and debug:
+            debug.log("PIPELINE_RESULT", f"scene_name={scene_name}\nresult={result}")
+        return result, None
+    finally:
+        print(f"[timing] Total: {time.perf_counter() - t0:.2f}s")
 
 
 def generate_batch(
@@ -349,65 +386,74 @@ def generate_batch(
     if DEBUG and debug:
         debug.log("BATCH_START", f"target={target_count}\nmax_attempts={max_attempts}\nnext_number={next_number}")
 
-    while added < target_count and attempts < max_attempts:
-        attempts += 1
-        existing_names = storage.names(data)
-        if on_progress:
-            on_progress(added, target_count, attempts)
+    if not data or not any(
+        item.get("name") == model and item.get("positive", "") == "" and item.get("negative", "") == ""
+        for item in data
+    ):
+        data.insert(0, {"name": model, "positive": "", "negative": ""})
 
-        result, reason = run_pipeline(lm, model, prompts, existing_names, context_token, data=data)
+    batch_start = time.perf_counter()
+    try:
+        while added < target_count and attempts < max_attempts:
+            attempts += 1
+            existing_names = storage.names(data)
+            if on_progress:
+                on_progress(added, target_count, attempts)
+
+            result, reason = run_pipeline(lm, model, prompts, existing_names, context_token, data=data)
+            if DEBUG and debug:
+                debug.log("BATCH_ATTEMPT", f"attempt={attempts}\nadded={added}\nresult={'ok' if result else 'None'}\nreason={reason or 'ok'}")
+            if not result:
+                print(f"  -> attempt {attempts} failed: {reason}")
+                continue
+
+            scene_name = f"{next_number:02d}_{result['_scene_name']}"
+
+            conflict = storage.find_duplicate(
+                data,
+                name=None,
+                prompt=result["prompt"],
+            )
+            if conflict:
+                if DEBUG and debug:
+                    debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=duplicate_prompt\nconflict={conflict}")
+                print(f"  -> attempt {attempts} skipped: duplicate_prompt ({conflict})")
+                continue
+
+            concept = " ".join(
+                str(result["_parts"].get(k, ""))
+                for k in ("subject", "pose", "state", "environment")
+            )
+            existing_concepts = storage.prompts(data)
+            score, key = lm.max_similarity_with_cache(concept, existing_concepts, cache)
+            if not existing_concepts:
+                pass
+            elif score == 0.0 and key is None:
+                if DEBUG and debug:
+                    debug.log("BATCH_WARN", f"scene={scene_name}\nembeddings_unavailable")
+            elif score > UNIQUENESS_THRESHOLD:
+                if DEBUG and debug:
+                    debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=too_similar\nscore={score:.2f}")
+                print(f"  -> attempt {attempts} skipped: too_similar (score={score:.2f})")
+                continue
+
+            data.append({
+                "name": scene_name,
+                "prompt": result["prompt"],
+                "negative_prompt": result["negative_prompt"],
+            })
+            added += 1
+            next_number += 1
+
+            if DEBUG and debug:
+                debug.log("BATCH_ADD", f"scene={scene_name}\nadded={added}\nattempts={attempts}")
+
+            if save_path is not None:
+                storage.save(save_path, data)
+    finally:
+        print(f"[timing] Batch total: {time.perf_counter() - batch_start:.2f}s")
         if DEBUG and debug:
-            debug.log("BATCH_ATTEMPT", f"attempt={attempts}\nadded={added}\nresult={'ok' if result else 'None'}\nreason={reason or 'ok'}")
-        if not result:
-            print(f"  -> attempt {attempts} failed: {reason}")
-            continue
-
-        scene_name = f"{next_number:02d}_{result['_scene_name']}"
-
-        conflict = storage.find_duplicate(
-            data,
-            name=None,
-            prompt=result["prompt"],
-        )
-        if conflict:
-            if DEBUG and debug:
-                debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=duplicate_prompt\nconflict={conflict}")
-            print(f"  -> attempt {attempts} skipped: duplicate_prompt ({conflict})")
-            continue
-
-        concept = " ".join(
-            str(result["_parts"].get(k, ""))
-            for k in ("subject", "pose", "state", "environment")
-        )
-        existing_concepts = storage.prompts(data)
-        score, key = lm.max_similarity_with_cache(concept, existing_concepts, cache)
-        if not existing_concepts:
-            pass
-        elif score == 0.0 and key is None:
-            if DEBUG and debug:
-                debug.log("BATCH_WARN", f"scene={scene_name}\nembeddings_unavailable")
-        elif score > UNIQUENESS_THRESHOLD:
-            if DEBUG and debug:
-                debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=too_similar\nscore={score:.2f}")
-            print(f"  -> attempt {attempts} skipped: too_similar (score={score:.2f})")
-            continue
-
-        data.append({
-            "name": scene_name,
-            "prompt": result["prompt"],
-            "negative_prompt": result["negative_prompt"],
-        })
-        added += 1
-        next_number += 1
-
-        if DEBUG and debug:
-            debug.log("BATCH_ADD", f"scene={scene_name}\nadded={added}\nattempts={attempts}")
-
-        if save_path is not None:
-            storage.save(save_path, data)
-
-    if DEBUG and debug:
-        debug.log("BATCH_END", f"added={added}\nattempts={attempts}\ntarget={target_count}")
+            debug.log("BATCH_END", f"added={added}\nattempts={attempts}\ntarget={target_count}")
     return added
 
 
