@@ -243,8 +243,6 @@ def run_pipeline(
         if DEBUG and debug:
             debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
         if not isinstance(parsed, dict):
-            if DEBUG and debug:
-                debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
             return None, "step7 invalid json"
 
         cleaned_parsed = clean_step_fields(parsed)
