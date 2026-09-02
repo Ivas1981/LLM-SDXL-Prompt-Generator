@@ -128,6 +128,11 @@ def _post_process_with_local_model(lm: LMClient, model: str, system: str, positi
         return positive, negative
     new_pos = parsed.get("positive") or positive
     new_neg = parsed.get("negative") or negative
+    if DEFAULT_CONTEXT_TOKEN not in new_pos:
+        if new_pos:
+            new_pos = f"{DEFAULT_CONTEXT_TOKEN}, {new_pos}"
+        else:
+            new_pos = DEFAULT_CONTEXT_TOKEN
     return new_pos, new_neg
 
 

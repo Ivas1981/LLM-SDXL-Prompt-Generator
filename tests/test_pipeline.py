@@ -147,8 +147,17 @@ class PipelineTests(unittest.TestCase):
         from core.pipeline import _post_process_with_local_model
         lm = unittest.mock.Mock()
         lm.chat.return_value = '{"positive": "a, b", "negative": "c, d"}'
-        pos, neg = _post_process_with_local_model(lm, "model", "system", "a, a, b", "c, c, d")
-        self.assertEqual(pos, "a, b")
+        pos, neg = _post_process_with_local_model(lm, "model", "system", "{prompt}, a, a, b", "c, c, d")
+        self.assertEqual(pos, "{prompt}, a, b")
+        self.assertEqual(neg, "c, d")
+
+    def test_post_process_with_local_model_preserves_context_token_when_missing(self):
+        from core.pipeline import _post_process_with_local_model
+        from core import config
+        lm = unittest.mock.Mock()
+        lm.chat.return_value = '{"positive": "a, b", "negative": "c, d"}'
+        pos, neg = _post_process_with_local_model(lm, "model", "system", "{prompt}, a, b", "c, d")
+        self.assertIn(config.DEFAULT_CONTEXT_TOKEN, pos)
         self.assertEqual(neg, "c, d")
 
     def test_generate_batch_skips_duplicate_model_marker(self):
