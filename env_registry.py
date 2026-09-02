@@ -86,7 +86,9 @@ ENV_SPEC: dict[str, EnvSpec] = {
         "Context window passed to POST /api/v1/models/load.",
     ),
     "NEGATIVE_BASE_TAGS": EnvSpec(
-        "NEGATIVE_BASE_TAGS", "", _str(""),
+        "NEGATIVE_BASE_TAGS",
+        "deformed, bad anatomy, disfigured, poorly drawn, mutation, mutated, extra limbs, extra fingers, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, bad hands, blurry",
+        _str("deformed, bad anatomy, disfigured, poorly drawn, mutation, mutated, extra limbs, extra fingers, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, bad hands, blurry"),
         "Comma-separated baseline tags always included in the final negative prompt.",
     ),
     "LM_STUDIO_LOG_ROOT": EnvSpec(

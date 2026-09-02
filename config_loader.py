@@ -118,6 +118,38 @@ def resolve_api_token() -> str | None:
     return None
 
 
+def resolve_uniqueness_threshold(default: float = 0.85) -> float:
+    env = os.environ.get("UNIQUENESS_THRESHOLD")
+    if env is not None:
+        try:
+            return float(env)
+        except ValueError:
+            return default
+    path = _resolve_config_path()
+    if path:
+        cfg = _load_toml(path)
+        v = _get(cfg, "generation", "uniqueness_threshold")
+        if isinstance(v, (int, float)):
+            return float(v)
+    return default
+
+
+def resolve_models_timeout(default: int = 180) -> int:
+    env = os.environ.get("MODELS_TIMEOUT")
+    if env is not None:
+        try:
+            return int(env)
+        except ValueError:
+            return default
+    path = _resolve_config_path()
+    if path:
+        cfg = _load_toml(path)
+        v = _get(cfg, "lm_studio", "models_timeout")
+        if isinstance(v, (int, float)):
+            return int(v)
+    return default
+
+
 def resolve_debug() -> bool:
     raw = os.environ.get("DEBUG")
     if raw is not None:

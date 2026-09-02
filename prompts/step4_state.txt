@@ -7,4 +7,7 @@ Output must be valid JSON with exactly these fields:
 Rules:
 - Use only English.
 - Be natural and specific.
+- Each field must be comma-separated tags only. NO full sentences. NO periods.
+- Preserve compound terms as single tags. Examples: "shirtless torso", "partial nudity", "weary delivery man".
+- Example good state: "weary delivery man, sitting on crates, shirtless torso, downcast gaze"
 - Output only the JSON object, nothing else.

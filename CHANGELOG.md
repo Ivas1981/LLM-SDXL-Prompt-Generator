@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.0] - 2026-09-02
+
+### Added
+- Cross-field and within-field tag deduplication in `core/validator.py`
+- Retry reason logging for pipeline step failures, chat retries, and batch skips
+- `NEGATIVE_BASE_TAGS` built-in default to prevent empty `negative_prompt`
+- `models_timeout` support in `config.toml` and via `MODELS_TIMEOUT` env var
+- `uniqueness_threshold` support in `config.toml` `[generation]` and via `UNIQUENESS_THRESHOLD` env var
+
+### Changed
+- Stricter camera/lens prompt rules in `prompts/step6_camera.txt` to prevent tag splitting
+- Assembly prompt (`prompts/step7_assemble.txt`) now enforces camera field contains only technical tags
+- `README.md` and `README_RU.md` updated with new features
+
+### Fixed
+- `_clean_field()` no longer over-splits compound terms in prose mode
+- Debug logging no longer overwrites `debug.log` unexpectedly
+- Config loading derives OpenAI URL from native LM Studio URL when `openai_url` is missing
+
 ## [1.0.0] - 2026-09-01
 
 ### Added

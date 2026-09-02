@@ -10,4 +10,5 @@ Rules:
 - Use only English.
 - Keep each field concise.
 - Do NOT include people or characters.
+- Each prop must be a distinct object. Separate props with commas in the final assembly.
 - Output only the JSON object, nothing else.

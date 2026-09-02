@@ -130,7 +130,7 @@ class ValidatorTests(unittest.TestCase):
             "lighting": "soft window light",
             "environment": "park during golden hour",
         })
-        self.assertEqual(neg, "")
+        self.assertIn("deformed", neg)
 
     def test_assemble_negative_night_extras(self):
         neg = validator.assemble_negative({
@@ -161,6 +161,19 @@ class ValidatorTests(unittest.TestCase):
     def test_validate_result_short_prompt(self):
         err = validator.validate_result({"prompt": "x", "negative_prompt": "y"})
         self.assertIsNotNone(err)
+
+    def test_clean_field_deduplicates_prose(self):
+        out = validator._clean_field("woman and woman standing.")
+        self.assertEqual(out, "woman, and, standing")
+
+    def test_assemble_positive_deduplicates_cross_field(self):
+        out = validator.assemble_positive({
+            "subject": "fashion model",
+            "pose": "standing",
+            "state": "standing",
+            "environment": "rooftop",
+        })
+        self.assertEqual(out.count("standing"), 1)
 
     def test_assemble_positive_subject_without_token_prepends_token(self):
         out = validator.assemble_positive({

@@ -9,4 +9,12 @@ Output must be valid JSON with exactly these fields:
 Rules:
 - Use only English.
 - Be specific and technical.
+- Each field must be comma-separated tags only. NO full sentences. NO periods.
+- Camera model names must keep their standard capitalization. Examples: "Canon EOS R5", "Nikon Z9", "Sony A7 IV". WRONG: "canon, eos, r5" or "Canon, EOS, R5".
+- Lens names must be single tags. Examples: "24-70mm f/2.8L", "50mm f/1.2", "70-200mm f/2.8". WRONG: "24-70mm, f/2.8L".
+- Shooting angle must be a single tag. Examples: "low angle", "high angle", "eye level", "dutch angle". WRONG: "low, angle".
+- Image quality must be a single tag. Examples: "soft focus", "grainy high contrast", "shallow depth of field". WRONG: "soft, focus".
+- The camera field must contain ONLY camera body, lens, angle, and image quality tags. Do NOT include people, actions, emotions, poses, scene content, or any tags from other fields.
+- Example good camera: "Canon EOS R5, full-frame sensor, 24-70mm f/2.8L, wide-angle, low contrast, soft focus"
+- Example WRONG camera: "canon, eos, r5, full-frame, 35mm, low, angle, direct eye contact"
 - Output only the JSON object, nothing else.

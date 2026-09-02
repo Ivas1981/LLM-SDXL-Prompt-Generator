@@ -10,5 +10,6 @@ Rules:
 - Use only English. Keep each field under 6 words.
 - Do NOT describe the subject's body, hair, skin, age, or ethnicity. A separate {prompt} placeholder covers appearance.
 - Avoid repeating themes from existing concepts.
+- mood must be comma-separated tags only. Example: "reflective, weary" not "reflective and weary".
 
 Output only the JSON object, nothing else.

@@ -15,6 +15,22 @@ Rules:
 - The string "{prompt}" (with braces) MUST appear verbatim in the "subject" field. It is a placeholder for the user's appearance description.
 - Do NOT replace {prompt} with words. Do NOT describe hair, skin, age, or ethnicity — {prompt} covers that.
 - Use only English.
-- Each field is a comma-separated string of short tags suitable for SDXL.
+- Each field MUST be comma-separated tags only. NO full sentences. NO periods.
+- Preserve compound terms as single tags. Examples: "Canon EOS R5", "Nikon D850", "24-70mm f/2.8L", "full-frame sensor", "low angle close-up". Do NOT split camera models, lens names, or technical terms into separate words.
+- Do not repeat concepts already covered by other fields. Examples: avoid repeating "direct eye contact" in both pose and relationships; avoid repeating lighting details in both lighting and environment.
+- The camera field must contain ONLY camera body, lens, angle, and image quality tags. Do NOT include people, actions, emotions, poses, or scene content in the camera field.
+- In environment, separate every prop and descriptor with commas. Example: "warehouse, afternoon, overcast, forklift lights, wooden pallet, metal trash can, window".
+- Keep tags concise and distinct.
 - Do not write any prose outside the JSON.
 - Output only the JSON object.
+
+Example good JSON:
+{
+  "subject": "{prompt} sitting on crates, downcast gaze, shirtless torso",
+  "pose": "sitting on crate, leaning back, resting elbows on knees, direct eye contact",
+  "state": "weary delivery man, sitting on crates, partial nudity",
+  "environment": "warehouse, afternoon, overcast, forklift lights, wooden pallet, metal trash can, window, large metal door, wooden crates with labels",
+  "relationships": "sitting in middle of warehouse, low angle, foreground subject, background crates",
+  "lighting": "soft indirect sunlight, dim warehouse lights, faint forklift glow, dusty beam of light",
+  "camera": "Canon EOS 5D Mark IV, full-frame sensor, 24-70mm f/2.8L, wide-angle, low contrast, soft focus"
+}

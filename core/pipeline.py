@@ -7,7 +7,7 @@ from typing import Any
 
 from .json_utils import extract_json_object, remove_forbidden_tags
 from .lm_client import LMClient
-from .validator import assemble_positive, assemble_negative, validate_result
+from .validator import assemble_positive, assemble_negative, validate_result, clean_step_json, clean_step_fields
 from .consistency import validate_environment
 from .embedding_cache import EmbeddingCache
 from . import storage
@@ -96,11 +96,16 @@ def _chat_with_retry(
 ) -> str | None:
     """Call lm.chat for `step` with up to `max_attempts` retries on empty results."""
     temp, max_tokens = STEP_PARAMS.get(step, (0.7, 400))
-    for _ in range(max_attempts):
+    debug = get_debug() if DEBUG else None
+    for attempt in range(max_attempts):
         user_msg = _format_user_hint(step, ctx, existing_names)
         response = _chat_step(lm, model, prompts[step], user_msg, temp, max_tokens)
         if response:
             return response
+        reason = "empty_response"
+        if DEBUG and debug:
+            debug.log("CHAT_RETRY", f"step={step}\nattempt={attempt + 1}\nreason={reason}")
+        print(f"  -> retry {step} attempt {attempt + 1}: {reason}")
     return None
 
 
@@ -110,26 +115,41 @@ def _run_environment_step(
     prompts: dict[str, str],
     ctx: dict[str, str],
     existing_names: list[str],
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any] | None, str | None]:
     """Run step2 with consistency checks. Up to ENV_MAX_RETRIES attempts."""
     temp, max_tokens = STEP_PARAMS[ENV_STEP]
     base_user = _format_user_hint(ENV_STEP, ctx, existing_names)
+    debug = get_debug() if DEBUG else None
     feedback = ""
     for attempt in range(ENV_MAX_RETRIES):
         user_msg = base_user + feedback
         response = _chat_step(lm, model, prompts[ENV_STEP], user_msg, temp, max_tokens)
         if not response:
+            reason = "empty_response"
+            if DEBUG and debug:
+                debug.log("ENV_STEP_RETRY", f"attempt={attempt + 1}\nreason={reason}")
+            print(f"  -> retry {ENV_STEP} attempt {attempt + 1}: {reason}")
             feedback = "\n\nYour previous answer was empty. Try again."
             continue
         parsed = extract_json_object(response)
         if not isinstance(parsed, dict):
+            reason = "invalid_json"
+            if DEBUG and debug:
+                debug.log("ENV_STEP_RETRY", f"attempt={attempt + 1}\nreason={reason}")
+            print(f"  -> retry {ENV_STEP} attempt {attempt + 1}: {reason}")
             feedback = "\n\nYour previous answer was not valid JSON. Output only the JSON object."
             continue
         err = validate_environment(parsed)
         if not err:
-            return parsed
+            return parsed, None
+        reason = f"validation_failed: {err}"
+        if DEBUG and debug:
+            debug.log("ENV_STEP_RETRY", f"attempt={attempt + 1}\nreason={reason}")
+        print(f"  -> retry {ENV_STEP} attempt {attempt + 1}: {reason}")
         feedback = f"\n\nYour previous environment had a problem: {err}. Fix it and output only the JSON."
-    return None
+    if DEBUG and debug:
+        debug.log("ENV_STEP_FAILED", f"reason=max_retries_exceeded\nmax_retries={ENV_MAX_RETRIES}")
+    return None, "environment step failed"
 
 
 def run_pipeline(
@@ -139,7 +159,7 @@ def run_pipeline(
     existing_names: list[str],
     context_token: str = DEFAULT_CONTEXT_TOKEN,
     data: list[dict] | None = None,
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any] | None, str | None]:
     ctx: dict[str, str] = {}
     debug = get_debug() if DEBUG else None
 
@@ -152,15 +172,15 @@ def run_pipeline(
     if DEBUG and debug:
         debug.log("PIPELINE_STEP_RESULT", f"step=step1_concept\nresponse={response}")
     if not response:
-        return None
-    ctx[step1.replace(".txt", "")] = response
+        return None, "empty response (step1)"
+    ctx[step1.replace(".txt", "")] = clean_step_json(response)
 
-    env_result = _run_environment_step(lm, model, prompts, ctx, existing_names)
+    env_result, env_reason = _run_environment_step(lm, model, prompts, ctx, existing_names)
     if DEBUG and debug:
         debug.log("PIPELINE_STEP_RESULT", f"step=step2_environment\nresult={env_result}")
     if not env_result:
-        return None
-    ctx[ENV_STEP.replace(".txt", "")] = json.dumps(env_result, ensure_ascii=False)
+        return None, env_reason or "environment step failed"
+    ctx[ENV_STEP.replace(".txt", "")] = json.dumps(clean_step_fields(env_result), ensure_ascii=False)
 
     remaining_steps = [s for s in PIPELINE_STEPS[:-1] if s not in (step1, ENV_STEP)]
     for step in remaining_steps:
@@ -168,24 +188,28 @@ def run_pipeline(
         if DEBUG and debug:
             debug.log("PIPELINE_STEP_RESULT", f"step={step}\nresponse={response}")
         if not response:
-            return None
-        ctx[step.replace(".txt", "")] = response
+            return None, f"empty response ({step})"
+        ctx[step.replace(".txt", "")] = clean_step_json(response)
 
     assemble_response = ctx["step7_assemble"]
     parsed = extract_json_object(assemble_response or "")
     if DEBUG and debug:
         debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
     if not isinstance(parsed, dict):
-        return None
+        if DEBUG and debug:
+            debug.log("PIPELINE_STEP_RESULT", f"step=step7_assemble\nparsed={parsed}")
+        return None, "step7 invalid json"
+
+    cleaned_parsed = clean_step_fields(parsed)
 
     parts = {
-        "subject": parsed.get("subject") or parsed.get("prompt_subject") or "",
-        "pose": parsed.get("pose") or "",
-        "state": parsed.get("state") or parsed.get("nudity") or "",
-        "environment": parsed.get("environment") or parsed.get("setting") or "",
-        "relationships": parsed.get("relationships") or parsed.get("spatial") or "",
-        "lighting": parsed.get("lighting") or "",
-        "camera": parsed.get("camera") or "",
+        "subject": cleaned_parsed.get("subject") or cleaned_parsed.get("prompt_subject") or "",
+        "pose": cleaned_parsed.get("pose") or "",
+        "state": cleaned_parsed.get("state") or cleaned_parsed.get("nudity") or "",
+        "environment": cleaned_parsed.get("environment") or cleaned_parsed.get("setting") or "",
+        "relationships": cleaned_parsed.get("relationships") or cleaned_parsed.get("spatial") or "",
+        "lighting": cleaned_parsed.get("lighting") or "",
+        "camera": cleaned_parsed.get("camera") or "",
     }
 
     pos = assemble_positive(parts, context_token=context_token)
@@ -195,7 +219,7 @@ def run_pipeline(
     if DEBUG and debug:
         debug.log("PIPELINE_VALIDATE", f"err={err}\npositive={pos}\nnegative={neg}")
     if err:
-        return None
+        return None, f"validation failed: {err}"
 
     name_resp = _chat_with_retry(
         lm,
@@ -208,6 +232,9 @@ def run_pipeline(
     )
     if DEBUG and debug:
         debug.log("PIPELINE_STEP_RESULT", f"step=step8_name\nresponse={name_resp}")
+
+    if not name_resp:
+        return None, "empty response (step8)"
 
     scene_name = _safe_name(name_resp or "")
     if not scene_name or scene_name == "scene":
@@ -274,7 +301,7 @@ def run_pipeline(
     result["_scene_name"] = scene_name
     if DEBUG and debug:
         debug.log("PIPELINE_RESULT", f"scene_name={scene_name}\nresult={result}")
-    return result
+    return result, None
 
 
 def generate_batch(
@@ -308,10 +335,11 @@ def generate_batch(
         if on_progress:
             on_progress(added, target_count, attempts)
 
-        result = run_pipeline(lm, model, prompts, existing_names, context_token, data=data)
+        result, reason = run_pipeline(lm, model, prompts, existing_names, context_token, data=data)
         if DEBUG and debug:
-            debug.log("BATCH_ATTEMPT", f"attempt={attempts}\nadded={added}\nresult={'ok' if result else 'None'}")
+            debug.log("BATCH_ATTEMPT", f"attempt={attempts}\nadded={added}\nresult={'ok' if result else 'None'}\nreason={reason or 'ok'}")
         if not result:
+            print(f"  -> attempt {attempts} failed: {reason}")
             continue
 
         scene_name = f"{next_number:02d}_{result['_scene_name']}"
@@ -324,6 +352,7 @@ def generate_batch(
         if conflict:
             if DEBUG and debug:
                 debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=duplicate_prompt\nconflict={conflict}")
+            print(f"  -> attempt {attempts} skipped: duplicate_prompt ({conflict})")
             continue
 
         concept = " ".join(
@@ -340,6 +369,7 @@ def generate_batch(
         elif score > UNIQUENESS_THRESHOLD:
             if DEBUG and debug:
                 debug.log("BATCH_SKIP", f"scene={scene_name}\nreason=too_similar\nscore={score:.2f}")
+            print(f"  -> attempt {attempts} skipped: too_similar (score={score:.2f})")
             continue
 
         data.append({

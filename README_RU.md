@@ -14,6 +14,8 @@
 - Атомарная запись JSON, безопасное прерывание через Ctrl+C
 - Presets сэмплирования для архитектур Qwen, Gemma, Mistral, DeepSeek, Nemotron, GPT-OSS
 - Конфигурация через переменные окружения или `config.toml`
+- Дедупликация тегов внутри полей и между полями
+- Логирование причин ретраев и пропусков на уровне пайплайна и батча
 
 ## Структура проекта
 
@@ -81,7 +83,7 @@ for entry in describe():
 | `MAX_ATTEMPTS_MULTIPLIER` | int | `10` | `max_attempts = target * это` |
 | `CHAT_TIMEOUT` | int | `600` | Секунды |
 | `LM_CONTEXT_LENGTH` | int | `8192` | Отправляется в `/api/v1/models/load` |
-| `NEGATIVE_BASE_TAGS` | str | `""` | Дополнительные базовые теги для негативного промпта |
+| `NEGATIVE_BASE_TAGS` | str | встроенный дефолт | Базовые теги для негативного промпта; переопределяется через env или `config.toml` |
 | `LM_STUDIO_LOG_ROOT` | path | `~/.lmstudio/server-logs` | Используется `lm_logs.py` |
 | `PROMPTGEN_CONFIG` | path | `./config.toml` | Переопределить расположение config.toml |
 | `DEBUG` | bool | `off` | Записывать запросы, ответы и ошибки в `debug.log` |

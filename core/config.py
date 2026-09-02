@@ -23,10 +23,10 @@ EMBEDDING_MODEL_NAME = _env.get_str("EMBEDDING_MODEL_NAME")
 _output_json = _env.get_str("OUTPUT_JSON")
 JSON_FILE = Path(_output_json) if _output_json else BASE_DIR / "sdxl_styles.json"
 
-UNIQUENESS_THRESHOLD = _env.get_float("UNIQUENESS_THRESHOLD")
+UNIQUENESS_THRESHOLD = _loader.resolve_uniqueness_threshold()
 MAX_ATTEMPTS_MULTIPLIER = _env.get_int("MAX_ATTEMPTS_MULTIPLIER")
 
-LM_STUDIO_MODELS_TIMEOUT = 30
+LM_STUDIO_MODELS_TIMEOUT = _loader.resolve_models_timeout()
 LM_STUDIO_CHAT_TIMEOUT = _env.get_int("CHAT_TIMEOUT")
 LM_STUDIO_EMBEDDING_TIMEOUT = 120
 

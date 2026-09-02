@@ -9,10 +9,6 @@ secrets.toml
 
 # Generated output
 sdxl_styles.json
-*.json.tmp
-debug.log
-
-# Generated output
-sdxl_styles.json
+sdxl_styles_test2.json
 *.json.tmp
 debug.log

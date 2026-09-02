@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
 try:
@@ -22,6 +23,51 @@ from .config import (
     DEBUG,
 )
 from .debug_log import get as get_debug
+
+
+def _redact_headers(headers: dict[str, str]) -> dict[str, str]:
+    redacted = dict(headers)
+    if "Authorization" in redacted:
+        redacted["Authorization"] = "Bearer <redacted>"
+    return redacted
+
+
+def _summarize_models_response(text: str) -> str:
+    try:
+        data = requests.compat.json.loads(text) if requests else {}
+    except Exception:
+        return text[:1000]
+    models = data.get("models", [])
+    lines = [f"models_count={len(models)}"]
+    for m in models[:20]:
+        key = m.get("key", m.get("id", "?"))
+        lines.append(f"  - {key}")
+    if len(models) > 20:
+        lines.append(f"  ... and {len(models) - 20} more")
+    return "\n".join(lines)
+
+
+def _summarize_embeddings_response(text: str) -> str:
+    try:
+        data = requests.compat.json.loads(text) if requests else {}
+    except Exception:
+        return text[:1000]
+    items = data.get("data", [])
+    lines = [f"embeddings_count={len(items)}"]
+    for i, item in enumerate(items[:5]):
+        vec = item.get("embedding") or []
+        lines.append(f"  [{i}] dim={len(vec)} model={item.get('model', '?')}")
+        if vec:
+            lines.append(f"       first={vec[0]:.6f} last={vec[-1]:.6f}")
+    if len(items) > 5:
+        lines.append(f"  ... and {len(items) - 5} more")
+    return "\n".join(lines)
+
+
+def _truncate(text: str, limit: int = 1000) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
 
 
 class AuthRequired(Exception):
@@ -72,17 +118,27 @@ class LMClient:
         url = f"{base or self.url}{endpoint}"
         debug = get_debug()
         if DEBUG and debug:
-            debug.log("REQUEST", f"{method} {url}\nheaders={headers}\nkwargs={kwargs}")
+            debug.log("REQUEST", f"{method} {url}\nheaders={_redact_headers(headers)}\nkwargs={kwargs}")
+        t0 = time.perf_counter()
         try:
             response = requests.request(method, url, headers=headers, **kwargs)
         except Exception as e:
+            elapsed = time.perf_counter() - t0
             if DEBUG and debug:
-                debug.log("REQUEST_ERROR", f"{method} {url}\nerror={e}")
+                debug.log("REQUEST_ERROR", f"{method} {url}\nerror={e}\nelapsed={elapsed:.3f}s")
             raise RuntimeError(f"Network error: {e}") from e
+        elapsed = time.perf_counter() - t0
         if response.status_code == 401 and not self._token_attempted:
             raise AuthRequired("LM Studio requires authentication (401).")
+        body = getattr(response, "text", "") or ""
+        if endpoint == "/models":
+            body = _summarize_models_response(body)
+        elif endpoint == "/embeddings":
+            body = _summarize_embeddings_response(body)
+        elif len(body) > 4000:
+            body = _truncate(body, 4000)
         if DEBUG and debug:
-            debug.log("RESPONSE", f"{method} {url} -> {response.status_code}\n{response.text[:4000]}")
+            debug.log("RESPONSE", f"{method} {url} -> {response.status_code} ({elapsed:.3f}s)\n{body}")
         response.raise_for_status()
         return response
 
@@ -248,7 +304,7 @@ class LMClient:
 
         debug = get_debug()
         if DEBUG and debug:
-            debug.log("CHAT_REQUEST", f"model={model}\nsystem={system[:500]}\nuser={user[:500]}\npayload={payload}")
+            debug.log("CHAT_REQUEST", f"model={model}\nsystem={_truncate(system, 500)}\nuser={_truncate(user, 500)}\npayload={_truncate(str(payload), 2000)}")
 
         try:
             r = self._request(

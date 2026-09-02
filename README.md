@@ -14,6 +14,10 @@ uniqueness via embeddings.
 - Atomic JSON output with safe Ctrl+C handling
 - Architecture-aware sampling presets for Qwen, Gemma, Mistral, DeepSeek, Nemotron, GPT-OSS
 - Configurable via environment variables or `config.toml`
+- Cross-field and within-field tag deduplication
+- Retry reason logging for failed pipeline steps and batch skips
+- Cross-field and within-field tag deduplication
+- Retry reason logging for failed pipeline steps and batch skips
 
 ## Project layout
 
@@ -81,7 +85,7 @@ for entry in describe():
 | `MAX_ATTEMPTS_MULTIPLIER` | int | `10` | `max_attempts = target * this` |
 | `CHAT_TIMEOUT` | int | `600` | Seconds |
 | `LM_CONTEXT_LENGTH` | int | `8192` | Sent to `/api/v1/models/load` |
-| `NEGATIVE_BASE_TAGS` | str | `""` | Extra baseline tags for the negative prompt |
+| `NEGATIVE_BASE_TAGS` | str | built-in default | Baseline tags for the negative prompt; configurable via env or `config.toml` |
 | `LM_STUDIO_LOG_ROOT` | path | `~/.lmstudio/server-logs` | Used by `lm_logs.py` |
 | `PROMPTGEN_CONFIG` | path | `./config.toml` | Override config.toml location |
 | `DEBUG` | bool | `off` | Write requests, responses, and errors to `debug.log` |

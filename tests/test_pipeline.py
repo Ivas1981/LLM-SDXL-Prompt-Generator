@@ -67,7 +67,7 @@ class PipelineTests(unittest.TestCase):
             tmp_path = Path(tmp.name)
 
         try:
-            with mock.patch("core.pipeline.run_pipeline", return_value=fake_result):
+            with mock.patch("core.pipeline.run_pipeline", return_value=(fake_result, None)):
                 with mock.patch.object(lm, "max_similarity_with_cache", return_value=(0.0, None)):
                     added = generate_batch(
                         lm=lm,

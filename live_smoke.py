@@ -73,9 +73,10 @@ def main(model_name: str | None = None) -> int:
         return 1
     ctx[step1.replace(".txt", "")] = resp
 
-    env_result = P._run_environment_step(lm, model_name, prompts, ctx, existing_names)
+    env_result, env_reason = P._run_environment_step(lm, model_name, prompts, ctx, existing_names)
     print(f"  step2: env_ok={bool(env_result)}")
     if not env_result:
+        print(f"  step2 failed: {env_reason}")
         return 1
     ctx["step2_environment"] = json.dumps(env_result, ensure_ascii=False)
 

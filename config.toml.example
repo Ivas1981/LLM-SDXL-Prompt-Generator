@@ -22,3 +22,10 @@
 
 # Debug logging. Write requests, responses, and errors to debug.log.
 # debug = false
+
+# Timeout for model operations (load/unload/list) in seconds.
+# models_timeout = 180
+
+# [generation]
+# Cosine similarity threshold above which a new scene is rejected as a duplicate.
+# uniqueness_threshold = 0.85
