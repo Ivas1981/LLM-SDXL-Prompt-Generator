@@ -16,6 +16,7 @@ import sys
 import tomllib
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 import env_registry
 
@@ -71,6 +72,18 @@ def resolve_url() -> str:
     return "http://localhost:1234/api/v1"
 
 
+def _derive_openai_url(native_url: str) -> str:
+    parsed = urlparse(native_url)
+    path = parsed.path
+    if path.endswith("/api/v1"):
+        path = path[: -len("/api/v1")] + "/v1"
+    elif "/api/" in path:
+        path = path.replace("/api/", "/")
+    else:
+        path = "/v1"
+    return urlunparse(parsed._replace(path=path))
+
+
 def resolve_openai_url() -> str:
     env = env_registry.get_str("LM_STUDIO_OPENAI_URL")
     if env:
@@ -81,6 +94,14 @@ def resolve_openai_url() -> str:
         v = _get(cfg, "lm_studio", "openai_url")
         if isinstance(v, str) and v:
             return v
+        native = _get(cfg, "lm_studio", "url")
+        if isinstance(native, str) and native:
+            return _derive_openai_url(native)
+        host = _get(cfg, "lm_studio", "host")
+        port = _get(cfg, "lm_studio", "port")
+        if host and port:
+            scheme = "https" if _get(cfg, "lm_studio", "use_ssl") else "http"
+            return f"{scheme}://{host}:{port}/v1"
     return "http://localhost:1234/v1"
 
 

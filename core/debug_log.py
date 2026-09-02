@@ -11,7 +11,7 @@ class DebugLog:
         self._path = Path(path) if path else Path("debug.log")
         self._file = None
         if self.enabled:
-            self._file = open(self._path, "a", encoding="utf-8")
+            self._file = open(self._path, "w", encoding="utf-8")
             self._write(f"=== DEBUG session started at {datetime.now().isoformat()} ===\n")
 
     def _write(self, text: str) -> None:
