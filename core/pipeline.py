@@ -18,6 +18,7 @@ from .config import (
     MAX_ATTEMPTS_MULTIPLIER,
     UNIQUENESS_THRESHOLD,
     DEBUG,
+    NSFW,
 )
 from .debug_log import get as get_debug
 
@@ -55,6 +56,10 @@ def load_system_prompts(prompts_dir: Path) -> dict[str, str]:
         if not p.exists():
             raise FileNotFoundError(f"Missing prompt file: {p}")
         prompts[name] = _read_prompt(p)
+    if not NSFW:
+        sfw = prompts_dir / "step4_state_sfw.txt"
+        if sfw.exists():
+            prompts["step4_state.txt"] = _read_prompt(sfw)
     return prompts
 
 

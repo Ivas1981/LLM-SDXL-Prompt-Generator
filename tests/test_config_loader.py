@@ -150,6 +150,50 @@ class ConfigLoaderTests(unittest.TestCase):
             if cfg_exists and cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
 
+    def test_resolve_nsfw_default(self):
+        if "NSFW" in os.environ:
+            del os.environ["NSFW"]
+        cfg_path = ROOT / "config.toml"
+        cfg_backup = None
+        if cfg_path.exists():
+            cfg_backup = cfg_path.read_text(encoding="utf-8")
+            cfg_path.write_text("", encoding="utf-8")
+        try:
+            self.assertFalse(config_loader.resolve_nsfw())
+        finally:
+            if cfg_backup is not None:
+                cfg_path.write_text(cfg_backup, encoding="utf-8")
+
+    def test_resolve_nsfw_env_overrides_config(self):
+        cfg_path = ROOT / "config.toml"
+        cfg_exists = cfg_path.exists()
+        cfg_backup = None
+        if cfg_exists:
+            cfg_backup = cfg_path.read_text(encoding="utf-8")
+            cfg_path.write_text("[generation]\nnsfw = false\n", encoding="utf-8")
+        os.environ["NSFW"] = "true"
+        try:
+            self.assertTrue(config_loader.resolve_nsfw())
+        finally:
+            os.environ.pop("NSFW", None)
+            if cfg_exists and cfg_backup is not None:
+                cfg_path.write_text(cfg_backup, encoding="utf-8")
+
+    def test_resolve_nsfw_config_toml(self):
+        cfg_path = ROOT / "config.toml"
+        cfg_exists = cfg_path.exists()
+        cfg_backup = None
+        if cfg_exists:
+            cfg_backup = cfg_path.read_text(encoding="utf-8")
+            cfg_path.write_text("[generation]\nnsfw = true\n", encoding="utf-8")
+        if "NSFW" in os.environ:
+            del os.environ["NSFW"]
+        try:
+            self.assertTrue(config_loader.resolve_nsfw())
+        finally:
+            if cfg_exists and cfg_backup is not None:
+                cfg_path.write_text(cfg_backup, encoding="utf-8")
+
 
 if __name__ == "__main__":
     unittest.main()

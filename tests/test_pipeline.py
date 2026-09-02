@@ -18,6 +18,14 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(prompts), 8)
         self.assertIn("step1_concept.txt", prompts)
 
+    def test_load_system_prompts_sfw_replaces_state_prompt(self):
+        prompts_dir = ROOT / "prompts"
+        with unittest.mock.patch("core.pipeline.NSFW", False):
+            prompts = load_system_prompts(prompts_dir)
+        self.assertIn("step4_state.txt", prompts)
+        self.assertIn("state", prompts["step4_state.txt"])
+        self.assertNotIn("nudity", prompts["step4_state.txt"])
+
     def test_format_user_hint_replaces_names(self):
         from core.pipeline import _format_user_hint, STEP_USER_HINT
         step_name = "step1_concept.txt"

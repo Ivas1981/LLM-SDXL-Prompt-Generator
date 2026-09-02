@@ -162,6 +162,14 @@ class ValidatorTests(unittest.TestCase):
         err = validator.validate_result({"prompt": "x", "negative_prompt": "y"})
         self.assertIsNotNone(err)
 
+    def test_assemble_negative_includes_standard_artifacts(self):
+        neg = validator.assemble_negative({
+            "lighting": "soft window light",
+            "environment": "park during golden hour",
+        })
+        for tag in ["text", "watermark", "jpeg artifacts", "low quality", "extra digits"]:
+            self.assertIn(tag, neg)
+
     def test_clean_field_deduplicates_prose(self):
         out = validator._clean_field("woman and woman standing.")
         self.assertEqual(out, "woman, and, standing")

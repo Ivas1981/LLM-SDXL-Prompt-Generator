@@ -29,3 +29,6 @@
 # [generation]
 # Cosine similarity threshold above which a new scene is rejected as a duplicate.
 # uniqueness_threshold = 0.85
+
+# Enable NSFW mode. When true, step4_state includes nudity field.
+# nsfw = false

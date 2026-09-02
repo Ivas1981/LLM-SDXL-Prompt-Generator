@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.0] - 2026-09-02
+
+### Added
+- SFW/NSFW mode toggle via `nsfw` in `config.toml` or `NSFW` env var
+- `step4_state_sfw.txt` prompt for SFW mode (no nudity field)
+- Expanded `NEGATIVE_BASE_TAGS` with standard SDXL artifacts (text, watermark, jpeg artifacts, etc.)
+- `pyproject.toml` with `python_requires = ">=3.11"` and optional `tomli` for py310
+- `requests.compat.json` replaced with stdlib `json` in `core/lm_client.py`
+
+### Changed
+- README deduplication fix (removed duplicate feature bullets)
+- `config.toml.example` now includes `[generation]` section with `nsfw` and `models_timeout`
+- Negative prompt baseline now covers common SDXL artifacts by default
+
+### Fixed
+- `_clean_field()` no longer over-splits compound terms in prose mode
+- Debug logging no longer overwrites `debug.log` unexpectedly
+- Config loading derives OpenAI URL from native LM Studio URL when `openai_url` is missing
+
 ## [1.1.0] - 2026-09-02
 
 ### Added

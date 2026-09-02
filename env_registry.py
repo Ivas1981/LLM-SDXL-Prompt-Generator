@@ -87,8 +87,8 @@ ENV_SPEC: dict[str, EnvSpec] = {
     ),
     "NEGATIVE_BASE_TAGS": EnvSpec(
         "NEGATIVE_BASE_TAGS",
-        "deformed, bad anatomy, disfigured, poorly drawn, mutation, mutated, extra limbs, extra fingers, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, bad hands, blurry",
-        _str("deformed, bad anatomy, disfigured, poorly drawn, mutation, mutated, extra limbs, extra fingers, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, bad hands, blurry"),
+        "deformed, bad anatomy, disfigured, poorly drawn, mutation, mutated, extra limbs, extra fingers, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, bad hands, blurry, extra digits, mutated hands, text, watermark, signature, jpeg artifacts, low quality, worst quality, bad quality, gross proportions, duplicate, cloned face, morbid, mutilated, out of frame",
+        _str("deformed, bad anatomy, disfigured, poorly drawn, mutation, mutated, extra limbs, extra fingers, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, bad hands, blurry, extra digits, mutated hands, text, watermark, signature, jpeg artifacts, low quality, worst quality, bad quality, gross proportions, duplicate, cloned face, morbid, mutilated, out of frame"),
         "Comma-separated baseline tags always included in the final negative prompt.",
     ),
     "LM_STUDIO_LOG_ROOT": EnvSpec(
@@ -114,6 +114,10 @@ ENV_SPEC: dict[str, EnvSpec] = {
     "EMBEDDING_MODEL_NAME": EnvSpec(
         "EMBEDDING_MODEL_NAME", "text-embedding-all-minilm-l6-v2", _str("text-embedding-all-minilm-l6-v2"),
         "Embedding model name used for semantic duplicate checks.",
+    ),
+    "NSFW": EnvSpec(
+        "NSFW", "false", _str("false"),
+        "Enable NSFW mode. When true, step4_state includes nudity field. Values: true/false.",
     ),
 }
 

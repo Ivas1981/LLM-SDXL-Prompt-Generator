@@ -16,8 +16,6 @@ uniqueness via embeddings.
 - Configurable via environment variables or `config.toml`
 - Cross-field and within-field tag deduplication
 - Retry reason logging for failed pipeline steps and batch skips
-- Cross-field and within-field tag deduplication
-- Retry reason logging for failed pipeline steps and batch skips
 
 ## Project layout
 
@@ -101,7 +99,18 @@ url = "http://localhost:1234/api/v1"
 openai_url = "http://localhost:1234/v1"
 api_token = ""
 debug = false
+
+[generation]
+uniqueness_threshold = 0.85
+nsfw = false
 ```
+
+## NSFW mode
+
+Set `nsfw = true` in `config.toml` under `[generation]` or `NSFW=true` in the
+environment to enable NSFW mode. In this mode, step 4 (`state`) includes an
+additional `nudity` field in the output. By default, the generator runs in SFW
+mode and the `state` step produces only physical state tags.
 
 ## Debug logging
 

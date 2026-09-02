@@ -1,5 +1,24 @@
 # История изменений
 
+## [1.2.0] - 2026-09-02
+
+### Добавлено
+- Переключатель SFW/NSFW режима через `nsfw` в `config.toml` или env `NSFW`
+- Промпт `step4_state_sfw.txt` для SFW режима (без поля `nudity`)
+- Расширен `NEGATIVE_BASE_TAGS` стандартными SDXL артефактами (text, watermark, jpeg artifacts и т.д.)
+- `pyproject.toml` с `python_requires = ">=3.11"` и опциональным `tomli` для py310
+- `requests.compat.json` заменён на stdlib `json` в `core/lm_client.py`
+
+### Изменено
+- Исправлен дубль в README (удалены повторяющиеся буллеты)
+- `config.toml.example` теперь содержит секцию `[generation]` с `nsfw` и `models_timeout`
+- Базовый негативный промпт теперь покрывает распространённые SDXL артефакты по умолчанию
+
+### Исправлено
+- `_clean_field()` больше не разбивает составные термины в prose-режиме
+- Отладка больше не перезаписывает `debug.log` неожиданно
+- Загрузка конфига теперь выводит OpenAI URL из нативного LM Studio URL, если `openai_url` отсутствует
+
 ## [1.1.0] - 2026-09-02
 
 ### Добавлено

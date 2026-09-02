@@ -165,6 +165,21 @@ def resolve_debug() -> bool:
     return False
 
 
+def resolve_nsfw(default: bool = False) -> bool:
+    raw = os.environ.get("NSFW")
+    if raw is not None:
+        return raw.lower() in ("true", "1", "yes", "on")
+    path = _resolve_config_path()
+    if path:
+        cfg = _load_toml(path)
+        v = _get(cfg, "generation", "nsfw")
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+    return default
+
+
 def config_path() -> Path | None:
     """Return the path of the loaded config file, or None if absent."""
     return _resolve_config_path()

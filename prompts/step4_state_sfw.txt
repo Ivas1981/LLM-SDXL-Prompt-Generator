@@ -1,0 +1,12 @@
+Describe the physical state of the subject for the scene.
+
+Output must be valid JSON with exactly these fields:
+- state: physical state in 6-12 words
+
+Rules:
+- Use only English.
+- Be natural and specific.
+- Each field must be comma-separated tags only. NO full sentences. NO periods.
+- Preserve compound terms as single tags. Examples: "weary delivery man", "sitting on crates", "downcast gaze".
+- Example good state: "weary delivery man, sitting on crates, downcast gaze, tired expression"
+- Output only the JSON object, nothing else.

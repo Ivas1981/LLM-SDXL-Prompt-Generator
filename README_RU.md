@@ -99,7 +99,19 @@ url = "http://localhost:1234/api/v1"
 openai_url = "http://localhost:1234/v1"
 api_token = ""
 debug = false
+
+[generation]
+uniqueness_threshold = 0.85
+nsfw = false
 ```
+
+## NSFW режим
+
+Установите `nsfw = true` в `config.toml` в секции `[generation]` или
+`NSFW=true` в окружении, чтобы включить NSFW режим. В этом режиме шаг 4
+(`state`) включает дополнительное поле `nudity` в вывод. По умолчанию
+генератор работает в SFW режиме, и шаг `state` выводит только теги физического
+состояния.
 
 ## Отладка
 

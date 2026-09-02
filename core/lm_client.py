@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from typing import Any
 
@@ -34,7 +35,7 @@ def _redact_headers(headers: dict[str, str]) -> dict[str, str]:
 
 def _summarize_models_response(text: str) -> str:
     try:
-        data = requests.compat.json.loads(text) if requests else {}
+        data = json.loads(text) if text else {}
     except Exception:
         return text[:1000]
     models = data.get("models", [])
@@ -49,7 +50,7 @@ def _summarize_models_response(text: str) -> str:
 
 def _summarize_embeddings_response(text: str) -> str:
     try:
-        data = requests.compat.json.loads(text) if requests else {}
+        data = json.loads(text) if text else {}
     except Exception:
         return text[:1000]
     items = data.get("data", [])

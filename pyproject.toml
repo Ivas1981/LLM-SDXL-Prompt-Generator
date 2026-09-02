@@ -1,0 +1,15 @@
+[project]
+name = "llm-sdxl-prompt-generator"
+version = "1.1.0"
+description = "Generate SDXL prompts via local LLM in LM Studio"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+[project.dependencies]
+requests = ">=2.28"
+
+[project.optional-dependencies]
+py310 = ["tomli >=2.0"]
+
+[tool.setuptools]
+packages = ["core"]

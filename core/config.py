@@ -45,6 +45,7 @@ PIPELINE_STEPS = (
 )
 
 DEFAULT_CONTEXT_TOKEN = _env.get_str("CONTEXT_TOKEN")
+NSFW = _loader.resolve_nsfw()
 FORBIDDEN_TAGS = (
     "woman", "girl", "female", "lady", "person", "human",
     "blonde", "brunette", "redhead", "black hair", "brown hair", "dark hair", "light hair",
