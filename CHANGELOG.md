@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1] - 2026-09-02
+
+### Changed
+- Removed per-step timing output; only total prompt generation time is printed
+- Model marker JSON entry is now inserted after the last existing prompt, not at the beginning
+
 ## [1.3.0] - 2026-09-02
 
 ### Added

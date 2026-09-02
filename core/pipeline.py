@@ -215,18 +215,14 @@ def run_pipeline(
         user = _format_user_hint(step1, ctx, existing_names)
         if DEBUG and debug:
             debug.log("PIPELINE_STEP", f"step=step1_concept\nuser={user}")
-        step_start = time.perf_counter()
         response = lm.chat(model, prompts[step1], user, temperature=temp, max_tokens=max_tokens)
-        print(f"[timing] step1: {time.perf_counter() - step_start:.2f}s")
         if DEBUG and debug:
             debug.log("PIPELINE_STEP_RESULT", f"step=step1_concept\nresponse={response}")
         if not response:
             return None, "empty response (step1)"
         ctx[step1.replace(".txt", "")] = clean_step_json(response)
 
-        step_start = time.perf_counter()
         env_result, env_reason = _run_environment_step(lm, model, prompts, ctx, existing_names)
-        print(f"[timing] step2: {time.perf_counter() - step_start:.2f}s")
         if DEBUG and debug:
             debug.log("PIPELINE_STEP_RESULT", f"step=step2_environment\nresult={env_result}")
         if not env_result:
@@ -235,9 +231,7 @@ def run_pipeline(
 
         remaining_steps = [s for s in PIPELINE_STEPS[:-1] if s not in (step1, ENV_STEP)]
         for step in remaining_steps:
-            step_start = time.perf_counter()
             response = _chat_with_retry(lm, model, prompts, step, ctx, existing_names, max_attempts=2)
-            print(f"[timing] {step}: {time.perf_counter() - step_start:.2f}s")
             if DEBUG and debug:
                 debug.log("PIPELINE_STEP_RESULT", f"step={step}\nresponse={response}")
             if not response:
@@ -262,9 +256,7 @@ def run_pipeline(
 
         post_process_system = prompts.get("step7_post_process.txt")
         if post_process_system:
-            step_start = time.perf_counter()
             pos, neg = _post_process_with_local_model(lm, model, post_process_system, pos, neg)
-            print(f"[timing] step7_post_process: {time.perf_counter() - step_start:.2f}s")
 
         err = validate_result({"prompt": pos, "negative_prompt": neg})
         if DEBUG and debug:
@@ -272,7 +264,6 @@ def run_pipeline(
         if err:
             return None, f"validation failed: {err}"
 
-        step_start = time.perf_counter()
         name_resp = _chat_with_retry(
             lm,
             model,
@@ -282,7 +273,6 @@ def run_pipeline(
             existing_names,
             max_attempts=2,
         )
-        print(f"[timing] step8: {time.perf_counter() - step_start:.2f}s")
         if DEBUG and debug:
             debug.log("PIPELINE_STEP_RESULT", f"step=step8_name\nresponse={name_resp}")
 
@@ -306,7 +296,6 @@ def run_pipeline(
                         break
             if not conflict:
                 break
-            step_start = time.perf_counter()
             name_resp = _chat_with_retry(
                 lm,
                 model,
@@ -316,7 +305,6 @@ def run_pipeline(
                 existing_names,
                 max_attempts=2,
             )
-            print(f"[timing] step8_retry: {time.perf_counter() - step_start:.2f}s")
             if DEBUG and debug:
                 debug.log("PIPELINE_STEP_RESULT", f"step=step8_name_retry\nresponse={name_resp}")
             scene_name = _safe_name(name_resp or "")
@@ -390,7 +378,7 @@ def generate_batch(
         item.get("name") == model and item.get("positive", "") == "" and item.get("negative", "") == ""
         for item in data
     ):
-        data.insert(0, {"name": model, "positive": "", "negative": ""})
+        data.append({"name": model, "positive": "", "negative": ""})
 
     batch_start = time.perf_counter()
     try:
