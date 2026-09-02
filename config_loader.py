@@ -11,6 +11,7 @@ Env-only overrides are also accepted for path resolution:
 
 from __future__ import annotations
 
+import os
 import sys
 import tomllib
 from pathlib import Path
@@ -97,9 +98,9 @@ def resolve_api_token() -> str | None:
 
 
 def resolve_debug() -> bool:
-    env = env_registry.get_str("DEBUG")
-    if env:
-        return env.lower() in ("on", "1", "true", "yes")
+    raw = os.environ.get("DEBUG")
+    if raw is not None:
+        return raw.lower() in ("on", "1", "true", "yes")
     path = _resolve_config_path()
     if path:
         cfg = _load_toml(path)

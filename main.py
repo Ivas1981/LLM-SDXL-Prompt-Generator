@@ -177,6 +177,12 @@ def run() -> int:
     else:
         print(f"Stopped early after attempts. Added {added}/{target}. Total: {len(data)}.")
     print(f"Output file: {config.JSON_FILE}")
+
+    from core.debug_log import get as get_debug
+    debug = get_debug()
+    if debug:
+        debug.close()
+
     return 0
 
 

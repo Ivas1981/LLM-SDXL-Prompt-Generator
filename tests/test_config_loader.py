@@ -32,9 +32,35 @@ class ConfigLoaderTests(unittest.TestCase):
         else:
             self.assertIsNone(path)
 
-    def test_resolve_debug_default_false(self):
+    def test_resolve_debug_from_config_toml(self):
         debug = config_loader.resolve_debug()
-        self.assertFalse(debug)
+        if (ROOT / "config.toml").exists():
+            cfg = config_loader._load_toml(ROOT / "config.toml")
+            v = config_loader._get(cfg, "lm_studio", "debug")
+            if isinstance(v, bool):
+                self.assertEqual(debug, v)
+            elif isinstance(v, str):
+                self.assertEqual(debug, v.lower() in ("on", "1", "true", "yes"))
+            else:
+                self.assertFalse(debug)
+        else:
+            self.assertFalse(debug)
+
+    def test_resolve_debug_env_overrides_config(self):
+        cfg_path = ROOT / "config.toml"
+        cfg_exists = cfg_path.exists()
+        cfg_backup = None
+        if cfg_exists:
+            cfg_backup = cfg_path.read_text(encoding="utf-8")
+            cfg_path.write_text("[lm_studio]\ndebug = false\n", encoding="utf-8")
+        os.environ["DEBUG"] = "on"
+        try:
+            debug = config_loader.resolve_debug()
+            self.assertTrue(debug)
+        finally:
+            os.environ.pop("DEBUG", None)
+            if cfg_exists and cfg_backup is not None:
+                cfg_path.write_text(cfg_backup, encoding="utf-8")
 
 
 if __name__ == "__main__":
