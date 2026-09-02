@@ -1,16 +1,18 @@
 Generate a detailed environment description for the scene.
 
 Output must be valid JSON with exactly these fields:
-- location: one concrete place WITHOUT time-of-day or weather phrases
+- location: one concrete place, NO time/weather words (max 4 words)
 - time_of_day: exactly one of "morning", "noon", "afternoon", "golden hour", "dusk", "evening", "night", "dawn"
-- weather: short weather tags only (no time-of-day words)
-- props: array of 3-6 distinct object names (strings)
+- weather: short weather tags only, no time words (max 3 words)
+- props: array of 3-5 distinct object names
 
 Rules:
-- Use only English.
-- Keep each field concise.
-- Do NOT include people or characters.
-- location must not contain phrases like "at night", "in the rain", "sunny", "during sunset".
+- Use only English. Concise tags only.
+- NO people or characters.
+- location must NOT contain: "at night", "in the rain", "sunny", "during sunset", etc.
 - weather must be physically plausible for time_of_day.
-- Each prop must be a distinct physical object.
+- Location determines valid weather:
+  * INDOOR (room, building, office, studio, mall, etc.): NO rain, snow, storm, fog, wind, overcast. Use indoor lighting: "fluorescent", "window light", "lamp light", "ambient indoor".
+  * UNDERGROUND (metro, subway, cave, tunnel, basement, bunker): NO sunlight, NO outdoor weather. Use: "artificial light", "dim lighting", "emergency lights", "neon", "fluorescent".
+  * OUTDOOR (street, park, beach, forest, mountain, etc.): Any weather valid for time_of_day.
 - Output only the JSON object, nothing else.

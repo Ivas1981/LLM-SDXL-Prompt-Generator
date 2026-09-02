@@ -1,16 +1,18 @@
 Describe concrete physical lighting for the scene.
 
 Output must be valid JSON with exactly these fields:
-- lighting: physical lighting tags in 5-10 words, comma-separated
-- light_source: what produces the light (short tags)
+- lighting: physical lighting tags (max 6 words)
+- light_source: what produces the light (max 3 words)
 
 Rules:
-- Use only English.
-- Lighting must be physically plausible for the given time_of_day and weather from the previous step.
-- Be specific about direction, color, and quality.
-- Prefer concrete sources: "window light", "overhead fluorescent", "golden hour sun", "neon sign", "desk lamp".
-- Avoid vague or quality-bait words: "beautiful lighting", "cinematic light", "dramatic", "perfect light", "masterpiece".
-- Each field must be comma-separated tags only. NO full sentences. NO periods.
-- Preserve compound terms as single tags. Examples: "soft indirect sunlight", "dim warehouse lights", "faint forklift glow", "dusty beam of light".
-- Example good lighting: "soft indirect sunlight, dim warehouse lights, dusty beam of light"
-- Output only the JSON object, nothing else.
+- Use only English. Comma-separated tags only. NO sentences.
+- Must be physically plausible for given time_of_day, weather, AND location from previous steps.
+- Location determines valid light sources:
+  * INDOOR: "overhead fluorescent", "window light", "desk lamp", "ceiling light", "ambient indoor", "soft box", "ring light". NO "sunlight", "sun rays", "golden hour sun".
+  * UNDERGROUND (metro, cave, tunnel, basement): "emergency lights", "dim fluorescent", "neon sign", "flickering bulb", "headlamp", "torch light". NO sunlight of any kind.
+  * OUTDOOR: "golden hour sun", "direct sunlight", "overcast daylight", "moonlight", "starlight", "streetlight", "neon sign".
+- Be specific about direction, color, quality.
+- Avoid vague/quality-bait: "beautiful lighting", "cinematic", "dramatic", "masterpiece".
+- Preserve compounds: "soft indirect sunlight", "dim warehouse lights".
+- IMPORTANT: Do NOT copy examples. Create original combinations.
+Output only the JSON object, nothing else.

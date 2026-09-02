@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.4.0] - 2026-09-02
+
+### Added
+- **Location-aware environment validation** in `core/consistency.py`:
+  - Indoor locations (kitchen, office, mall, etc.) reject outdoor weather (rain, snow, storm, fog, wind)
+  - Underground locations (metro, subway, cave, tunnel, basement) reject ALL sunlight + outdoor weather
+  - Indoor but not underground allows window light but rejects harsh direct sunlight
+  - Word-boundary regex matching prevents false positives (e.g., "mall" in "small")
+- **SDXL-compatible token budgets** across all system prompts:
+  - Reduced word limits: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8)
+  - Total positive prompt target: ~53 words max (fits SDXL ~75 token limit)
+- **Anti-example-copying instructions** in all 11 prompt files
+- **Location-specific light source guidance** in step2 and step5 prompts (indoor/underground/outdoor)
+- **Cross-field deduplication rules** in step7: no "direct eye contact" in both pose/relationships, no lighting in environment, no pose in subject
+- **Post-process hard limit**: positive prompt MUST stay under 75 tokens / ~50 words
+- Comprehensive config.toml.example with all configurable keys
+
+### Changed
+- All 11 system prompts rewritten: removed concrete examples models were memorizing, tightened word limits, added anti-copying rules
+- `pyproject.toml`: `python_requires = ">=3.10"` (was 3.11)
+- `config_loader.py`: Added `tomli` fallback for Python 3.10 compatibility
+- Model marker fields: `positive`/`negative` → `prompt`/`negative_prompt` for consistency
+- Step8 name collision logic: removed incorrect `endswith` check causing false positives
+- Semantic similarity check: now warns but doesn't skip when embeddings unavailable
+- Duplicate detection: filters empty prompts from model marker entries
+
+### Fixed
+- NSFW step4 template missing `{names}` placeholder for existing concepts
+- Test isolation in config_loader tests: proper config.toml cleanup after each test
+- Test_latest_log_path_returns_path: rewritten to use temp directories
+- Config_loader import chain: tomllib/tomli fallback now works correctly
+- test_valid_environment_ok: updated to use valid outdoor location
+
 ## [1.3.1] - 2026-09-02
 
 ### Changed

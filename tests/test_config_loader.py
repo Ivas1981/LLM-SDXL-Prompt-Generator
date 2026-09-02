@@ -1,3 +1,5 @@
+"""Tests for config_loader module."""
+
 import unittest
 from pathlib import Path
 import sys
@@ -49,150 +51,154 @@ class ConfigLoaderTests(unittest.TestCase):
     def test_resolve_debug_env_overrides_config(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[lm_studio]\ndebug = false\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[lm_studio]\ndebug = false\n", encoding="utf-8")
         os.environ["DEBUG"] = "on"
         try:
             debug = config_loader.resolve_debug()
             self.assertTrue(debug)
         finally:
             os.environ.pop("DEBUG", None)
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_uniqueness_threshold_default(self):
         if "UNIQUENESS_THRESHOLD" in os.environ:
             del os.environ["UNIQUENESS_THRESHOLD"]
         cfg_path = ROOT / "config.toml"
-        cfg_backup = None
-        if cfg_path.exists():
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_path.exists() else None
+        cfg_path.write_text("", encoding="utf-8")
         try:
             self.assertEqual(config_loader.resolve_uniqueness_threshold(), 0.85)
         finally:
             if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_uniqueness_threshold_env_overrides_config(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[generation]\nuniqueness_threshold = 0.95\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[generation]\nuniqueness_threshold = 0.95\n", encoding="utf-8")
         os.environ["UNIQUENESS_THRESHOLD"] = "0.75"
         try:
             self.assertEqual(config_loader.resolve_uniqueness_threshold(), 0.75)
         finally:
             os.environ.pop("UNIQUENESS_THRESHOLD", None)
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_uniqueness_threshold_config_toml(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[generation]\nuniqueness_threshold = 0.92\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[generation]\nuniqueness_threshold = 0.92\n", encoding="utf-8")
         if "UNIQUENESS_THRESHOLD" in os.environ:
             del os.environ["UNIQUENESS_THRESHOLD"]
         try:
             self.assertEqual(config_loader.resolve_uniqueness_threshold(), 0.92)
         finally:
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_models_timeout_default(self):
         if "MODELS_TIMEOUT" in os.environ:
             del os.environ["MODELS_TIMEOUT"]
         cfg_path = ROOT / "config.toml"
-        cfg_backup = None
-        if cfg_path.exists():
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_path.exists() else None
+        cfg_path.write_text("", encoding="utf-8")
         try:
             self.assertEqual(config_loader.resolve_models_timeout(), 180)
         finally:
             if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_models_timeout_env_overrides_config(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[lm_studio]\nmodels_timeout = 240\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[lm_studio]\nmodels_timeout = 240\n", encoding="utf-8")
         os.environ["MODELS_TIMEOUT"] = "300"
         try:
             self.assertEqual(config_loader.resolve_models_timeout(), 300)
         finally:
             os.environ.pop("MODELS_TIMEOUT", None)
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_models_timeout_config_toml(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[lm_studio]\nmodels_timeout = 240\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[lm_studio]\nmodels_timeout = 240\n", encoding="utf-8")
         if "MODELS_TIMEOUT" in os.environ:
             del os.environ["MODELS_TIMEOUT"]
         try:
             self.assertEqual(config_loader.resolve_models_timeout(), 240)
         finally:
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_nsfw_default(self):
         if "NSFW" in os.environ:
             del os.environ["NSFW"]
         cfg_path = ROOT / "config.toml"
-        cfg_backup = None
-        if cfg_path.exists():
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_path.exists() else None
+        cfg_path.write_text("", encoding="utf-8")
         try:
             self.assertFalse(config_loader.resolve_nsfw())
         finally:
             if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_nsfw_env_overrides_config(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[generation]\nnsfw = false\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[generation]\nnsfw = false\n", encoding="utf-8")
         os.environ["NSFW"] = "true"
         try:
             self.assertTrue(config_loader.resolve_nsfw())
         finally:
             os.environ.pop("NSFW", None)
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
 
     def test_resolve_nsfw_config_toml(self):
         cfg_path = ROOT / "config.toml"
         cfg_exists = cfg_path.exists()
-        cfg_backup = None
-        if cfg_exists:
-            cfg_backup = cfg_path.read_text(encoding="utf-8")
-            cfg_path.write_text("[generation]\nnsfw = true\n", encoding="utf-8")
+        cfg_backup = cfg_path.read_text(encoding="utf-8") if cfg_exists else None
+        cfg_path.write_text("[generation]\nnsfw = true\n", encoding="utf-8")
         if "NSFW" in os.environ:
             del os.environ["NSFW"]
         try:
             self.assertTrue(config_loader.resolve_nsfw())
         finally:
-            if cfg_exists and cfg_backup is not None:
+            if cfg_backup is not None:
                 cfg_path.write_text(cfg_backup, encoding="utf-8")
+            else:
+                cfg_path.unlink(missing_ok=True)
+
+    def test_resolve_url_default(self):
+        url = config_loader.resolve_url()
+        self.assertIn("http", url)
 
 
 if __name__ == "__main__":

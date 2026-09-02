@@ -204,9 +204,9 @@ class ValidatorTests(unittest.TestCase):
 class ConsistencyTests(unittest.TestCase):
     def test_valid_environment_ok(self):
         env = {
-            "location": "small kitchen",
+            "location": "small park bench",
             "time_of_day": "evening",
-            "weather": "rain outside",
+            "weather": "light rain",
             "props": "espresso machine",
         }
         self.assertIsNone(consistency.validate_environment(env))

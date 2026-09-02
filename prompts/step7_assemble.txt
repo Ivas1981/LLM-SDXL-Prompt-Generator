@@ -1,41 +1,28 @@
-Assemble the previous steps into a single JSON object for Stable Diffusion XL.
-Use only these exact keys:
+Assemble previous steps into a single JSON for Stable Diffusion XL.
 
+Use only these exact keys:
 {
-  "subject": "<literally {prompt} followed by clothing tags only, 4-10 words>",
-  "pose": "<body position, expression, eye contact only, 5-10 words>",
-  "state": "<physical condition / expression only, 6-12 words>",
-  "environment": "<location, time, weather, props only, 8-15 words>",
-  "relationships": "<spatial layout only: subject vs environment, foreground/background, 6-14 words>",
-  "lighting": "<physical lighting only, 5-10 words>",
-  "camera": "<camera body, lens, angle, optical quality only, 6-12 words>"
+  "subject": "<literally {prompt} + clothing tags only, max 6 words>",
+  "pose": "<body position + expression + eye contact, max 7 words>",
+  "state": "<physical/emotional condition only, max 8 words>",
+  "environment": "<location + time + weather + props, max 10 words>",
+  "relationships": "<spatial layout only, max 8 words>",
+  "lighting": "<physical lighting only, max 6 words>",
+  "camera": "<camera + lens + angle + quality, max 8 words>"
 }
 
 Rules:
-- The string "{prompt}" (with braces) MUST appear verbatim in the "subject" field. It is a placeholder for appearance.
-- Do NOT replace {prompt}. Do NOT describe hair, skin, age, or ethnicity.
-- Use only English.
-- Each field MUST be comma-separated tags only. NO full sentences. NO periods.
-- Preserve compound terms as single tags. Examples: "Canon EOS R5", "24-70mm f/2.8L", "full-frame sensor", "low angle", "shallow depth of field".
-- Do not repeat the same concept across fields. Examples: do not put "direct eye contact" in both pose and relationships; do not put lighting words into environment; do not put pose into subject.
-- subject = "{prompt}" + clothing tags only.
-- pose = body position + expression + eye contact only.
-- state = physical/emotional condition only (no clothing, no full pose copy, no nudity).
-- environment = location + time + weather + props only.
-- relationships = spatial relations only.
-- camera = technical camera/lens/angle/quality only. No people, actions, or scene content.
-- Do NOT include nudity, partial undress, exposed skin focus, or sexualized body description.
-- Do NOT use quality-bait tags: "masterpiece", "best quality", "8k", "ultra detailed", "HDR", "UHD".
-- Keep tags concise and distinct.
-- Output only the JSON object, nothing else.
-
-Example good JSON:
-{
-  "subject": "{prompt}, worn leather jacket, faded jeans, black boots",
-  "pose": "sitting on crate, leaning back, resting elbows on knees, direct eye contact",
-  "state": "weary posture, downcast gaze, tired expression",
-  "environment": "warehouse, afternoon, overcast, forklift lights, wooden pallet, metal trash can, large metal door",
-  "relationships": "subject in mid-ground, crates in foreground, open door in background",
-  "lighting": "soft indirect sunlight, dim warehouse lights, dusty beam of light",
-  "camera": "Canon EOS 5D Mark IV, full-frame sensor, 24-70mm f/2.8L, eye level, shallow depth of field"
-}
+- "{prompt}" MUST appear verbatim in "subject". Do NOT replace it.
+- Use only English. Comma-separated tags only. NO sentences. NO periods.
+- Preserve compound terms: "Canon EOS R5", "24-70mm f/2.8L", "shallow depth of field".
+- NO cross-field repetition: no "direct eye contact" in both pose/relationships; no lighting in environment; no pose in subject.
+- subject = "{prompt}" + clothing ONLY.
+- pose = body position + expression + eye contact ONLY.
+- state = physical/emotional condition ONLY (no clothing, no pose, no nudity in SFW).
+- environment = location + time + weather + props ONLY.
+- relationships = spatial relations ONLY.
+- camera = technical camera/lens/angle/quality ONLY.
+- NO quality-bait: "masterpiece", "best quality", "8k", "ultra detailed", "HDR", "UHD".
+- TOTAL positive prompt target: ~50 words MAX for SDXL compatibility.
+- IMPORTANT: Do NOT copy examples. Create original combinations.
+Output only the JSON object, nothing else.

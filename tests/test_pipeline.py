@@ -137,8 +137,8 @@ class PipelineTests(unittest.TestCase):
             data = storage.load_or_init(tmp_path)
             self.assertEqual(len(data), 2)
             self.assertEqual(data[0]["name"], "m")
-            self.assertEqual(data[0]["positive"], "")
-            self.assertEqual(data[0]["negative"], "")
+            self.assertEqual(data[0]["prompt"], "")
+            self.assertEqual(data[0]["negative_prompt"], "")
             self.assertEqual(data[1]["name"], "01_test_scene")
         finally:
             tmp_path.unlink(missing_ok=True)
@@ -194,7 +194,7 @@ class PipelineTests(unittest.TestCase):
                         lm=lm,
                         model="existing-model",
                         prompts=prompts,
-                        data=[{"name": "existing-model", "positive": "", "negative": ""}],
+                        data=[{"name": "existing-model", "prompt": "", "negative_prompt": ""}],
                         target_count=1,
                         on_progress=None,
                         save_path=tmp_path,

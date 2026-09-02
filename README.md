@@ -17,6 +17,9 @@ uniqueness via embeddings.
 - Cross-field and within-field tag deduplication
 - Retry reason logging for failed pipeline steps and batch skips
 - SFW/NSFW mode toggle via `nsfw` in `config.toml` or `NSFW` env var
+- **Location-aware environment validation** (indoor/underground/outdoor weather/lighting constraints)
+- **SDXL-compatible token budgets** (~50 words max for positive prompt)
+- **Anti-example-copying prompts** for diverse, original outputs
 
 ## Project layout
 
@@ -101,10 +104,19 @@ url = "http://localhost:1234/api/v1"
 openai_url = "http://localhost:1234/v1"
 api_token = ""
 debug = false
+models_timeout = 180
+chat_timeout = 600
 
 [generation]
 uniqueness_threshold = 0.85
 nsfw = false
+lm_context_length = 8192
+max_attempts_multiplier = 10
+negative_base_tags = "deformed, bad anatomy, ..."
+output_json = "sdxl_styles.json"
+context_token = "{prompt}"
+lm_studio_log_root = ""
+promptgen_config = ""
 ```
 
 ## NSFW mode
@@ -146,3 +158,6 @@ python -m unittest discover tests
 - LM Studio auth: the script reads `LM_API_TOKEN` from the environment, and if
   the server responds `401` it asks for a token once per run.
 - JSON output is written atomically (`tempfile` + `os.replace`).
+- **Prompt word limits**: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8) — total ~53 words max for SDXL compatibility.
+- **Location-aware validation**: indoor locations reject outdoor weather (rain, snow, etc.); underground locations reject all sunlight; outdoor locations accept any weather valid for time_of_day.
+- **Anti-example-copying**: All prompts explicitly instruct the LLM not to copy examples from the instructions, ensuring diverse, original outputs.

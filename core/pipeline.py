@@ -378,10 +378,10 @@ def generate_batch(
         debug.log("BATCH_START", f"target={target_count}\nmax_attempts={max_attempts}\nnext_number={next_number}")
 
     if not data or not any(
-        item.get("name") == model and item.get("positive", "") == "" and item.get("negative", "") == ""
+        item.get("name") == model and item.get("prompt", "") == "" and item.get("negative_prompt", "") == ""
         for item in data
     ):
-        data.append({"name": model, "positive": "", "negative": ""})
+        data.append({"name": model, "prompt": "", "negative_prompt": ""})
 
     batch_start = time.perf_counter()
     try:

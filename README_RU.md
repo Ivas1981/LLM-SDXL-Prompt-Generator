@@ -17,6 +17,9 @@
 - Дедупликация тегов внутри полей и между полями
 - Логирование причин ретраев и пропусков на уровне пайплайна и батча
 - Переключатель SFW/NSFW режима через `nsfw` в `config.toml` или env `NSFW`
+- **Валидация окружения с учётом типа локации** (indoor/underground/outdoor — погода/освещение)
+- **SDXL-совместимые лимиты токенов** (~50 слов макс. для позитивного промпта)
+- **Анти-копирование примеров** в промптах для разнообразных, оригинальных результатов
 
 ## Структура проекта
 
@@ -101,10 +104,19 @@ url = "http://localhost:1234/api/v1"
 openai_url = "http://localhost:1234/v1"
 api_token = ""
 debug = false
+models_timeout = 180
+chat_timeout = 600
 
 [generation]
 uniqueness_threshold = 0.85
 nsfw = false
+lm_context_length = 8192
+max_attempts_multiplier = 10
+negative_base_tags = "deformed, bad anatomy, ..."
+output_json = "sdxl_styles.json"
+context_token = "{prompt}"
+lm_studio_log_root = ""
+promptgen_config = ""
 ```
 
 ## NSFW режим
@@ -147,3 +159,6 @@ python -m unittest discover tests
 - Авторизация LM Studio: скрипт читает `LM_API_TOKEN` из окружения, а если
   сервер отвечает `401` — запрашивает токен один раз за запуск.
 - JSON-выход записывается атомарно (`tempfile` + `os.replace`).
+- **Лимиты слов промптов**: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8) — всего ~53 слова макс. для совместимости с SDXL.
+- **Валидация с учётом локации**: indoor локации отвергают уличную погоду (дождь, снег и т.д.); underground локации отвергают весь солнечный свет; outdoor локации принимают любую погоду, валидную для time_of_day.
+- **Анти-копирование примеров**: Все промпты явно запрещают копировать примеры из инструкций, обеспечивая разнообразные, оригинальные результаты.

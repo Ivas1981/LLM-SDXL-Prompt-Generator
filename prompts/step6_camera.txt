@@ -1,20 +1,16 @@
 Describe technical camera parameters for the scene.
 
 Output must be valid JSON with exactly these fields:
-- camera: camera body or type
-- lens: focal length and type as a single tag
-- angle: shooting angle as a single tag (2-5 words)
-- quality: image quality / optical look as a single tag (2-5 words)
+- camera: camera body/type as ONE tag (e.g. "Canon EOS R5")
+- lens: focal length + aperture as ONE tag (e.g. "24-70mm f/2.8L")
+- angle: shooting angle as ONE tag (e.g. "low angle")
+- quality: optical look as ONE tag (e.g. "shallow depth of field")
 
 Rules:
-- Use only English.
-- Be specific and technical.
-- Each field must be comma-separated tags only. NO full sentences. NO periods.
-- Camera model names keep standard capitalization as one tag. Examples: "Canon EOS R5", "Nikon Z9", "Sony A7 IV". WRONG: "canon, eos, r5".
-- Lens names must be single tags. Examples: "24-70mm f/2.8L", "50mm f/1.2", "70-200mm f/2.8". WRONG: "24-70mm, f/2.8L".
-- Angle examples: "low angle", "high angle", "eye level", "dutch angle". WRONG: "low, angle".
-- Quality examples: "soft focus", "shallow depth of field", "film grain", "high contrast". WRONG: "soft, focus".
-- Do NOT include people, actions, emotions, poses, clothing, or scene content.
-- Do NOT use quality-bait: "masterpiece", "best quality", "8k", "16k", "ultra detailed", "highly detailed", "HDR", "UHD".
-- Example good result when later joined: "Canon EOS R5, full-frame sensor, 24-70mm f/2.8L, low angle, shallow depth of field"
-- Output only the JSON object, nothing else.
+- Use only English. Each field = ONE comma-separated tag.
+- Standard capitalization for camera/lens names.
+- WRONG: "canon, eos, r5" or "24-70mm, f/2.8L" or "low, angle".
+- NO people, actions, poses, clothing, scene content.
+- NO quality-bait: "masterpiece", "8k", "ultra detailed", "HDR", "UHD".
+- IMPORTANT: Do NOT copy examples from instructions.
+Output only the JSON object, nothing else.

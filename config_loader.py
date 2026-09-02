@@ -13,10 +13,14 @@ from __future__ import annotations
 
 import os
 import sys
-import tomllib
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 import env_registry
 

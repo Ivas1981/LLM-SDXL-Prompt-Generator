@@ -26,9 +26,33 @@
 # Timeout for model operations (load/unload/list) in seconds.
 # models_timeout = 180
 
-# [generation]
+# Timeout for chat requests in seconds.
+# chat_timeout = 600
+
+[generation]
 # Cosine similarity threshold above which a new scene is rejected as a duplicate.
 # uniqueness_threshold = 0.85
 
 # Enable NSFW mode. When true, step4_state includes nudity field.
 # nsfw = false
+
+# Context length passed to POST /api/v1/models/load.
+# lm_context_length = 8192
+
+# Multiplier for max attempts: max_attempts = target_count * this.
+# max_attempts_multiplier = 10
+
+# Baseline negative prompt tags (comma-separated).
+# negative_base_tags = "deformed, bad anatomy, ..."
+
+# Output JSON file path.
+# output_json = "sdxl_styles.json"
+
+# Placeholder for appearance description in the positive prompt.
+# context_token = "{prompt}"
+
+# Override path to LM Studio server logs (used by lm_logs.py).
+# lm_studio_log_root = ""
+
+# Override path to config.toml.
+# promptgen_config = ""
