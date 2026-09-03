@@ -13,6 +13,6 @@ Rules:
   * OUTDOOR: "golden hour sun", "direct sunlight", "overcast daylight", "moonlight", "starlight", "streetlight", "neon sign".
 - Be specific about direction, color, quality.
 - Avoid vague/quality-bait: "beautiful lighting", "cinematic", "dramatic", "masterpiece".
-- Preserve compounds: "soft indirect sunlight", "dim warehouse lights".
+- Preserve compounds: do not split multi-word lighting terms.
 - IMPORTANT: Do NOT copy examples. Create original combinations.
 Output only the JSON object, nothing else.

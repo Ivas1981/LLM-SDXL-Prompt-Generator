@@ -9,6 +9,6 @@ Rules:
 - Do NOT include nudity, partial undress, exposed skin focus, lingerie focus, or sexualized body description.
 - Do NOT repeat clothing, pose, or environment details.
 - Do NOT describe hair, skin tone, age, ethnicity.
-- Preserve compounds: "weary posture", "downcast gaze", "tired expression", "relaxed shoulders".
+- Preserve compounds: do not split multi-word state terms.
 - IMPORTANT: Do NOT copy examples from instructions.
 Output only the JSON object, nothing else.

@@ -10,6 +10,6 @@ Rules:
 - Eye contact MUST be "direct eye contact" inside pose tags.
 - Do NOT describe hair, skin, age, ethnicity, body type.
 - Do NOT put physical condition/nudity into clothing or pose (state step handles this).
-- Preserve compound terms: "worn leather jacket", "direct eye contact".
+- Preserve compound terms: do not split multi-word clothing or pose terms.
 - IMPORTANT: Do NOT copy examples from instructions. Create original combinations.
 Output only the JSON object, nothing else.
