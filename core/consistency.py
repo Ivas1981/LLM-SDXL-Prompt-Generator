@@ -14,7 +14,7 @@ VALID_TIMES = (
     "dawn",
 )
 
-DAY_TIMES = {"morning", "noon", "afternoon", "golden hour"}
+DAY_TIMES = {"morning", "noon", "afternoon", "golden hour", "dawn"}
 NIGHT_TIMES = {"dusk", "evening", "night"}
 
 DAY_MARKERS = ("noon", "midday", "sunlight", "daylight", "bright sun", "sunshine", "blue sky")
@@ -116,7 +116,7 @@ def validate_environment(env: dict[str, Any]) -> str | None:
             if marker in weather:
                 return f"weather '{weather}' is incompatible with night '{time_of_day}'"
 
-    if time_of_day in {"noon", "afternoon", "morning"}:
+    if time_of_day in {"noon", "afternoon", "morning", "dawn"}:
         for marker in INCOMPATIBLE_WEATHER_FOR_DAY:
             if marker in weather:
                 return f"weather '{weather}' is unlikely at {time_of_day}"

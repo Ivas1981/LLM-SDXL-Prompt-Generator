@@ -3,7 +3,7 @@ Assemble previous steps into a single JSON for Stable Diffusion XL.
 Use only these exact keys:
 {
   "subject": "<literally {prompt} + clothing tags only, max 6 words>",
-  "pose": "<body position + expression + eye contact, max 7 words>",
+  "pose": "<body position + expression, max 7 words>",
   "state": "<physical/emotional condition only, max 8 words>",
   "environment": "<location + time + weather + props, max 10 words>",
   "relationships": "<spatial layout only, max 8 words>",
@@ -12,17 +12,17 @@ Use only these exact keys:
 }
 
 Rules:
-- "{prompt}" MUST appear verbatim in "subject". Do NOT replace it.
+- "{prompt}" MUST be preserved as a placeholder for the user's own description (woman, age, hair color, body type, ethnicity). Do NOT replace {prompt} with any text.
 - Use only English. Comma-separated tags only. NO sentences. NO periods.
 - Preserve compound terms: "Canon EOS R5", "24-70mm f/2.8L", "shallow depth of field".
-- NO cross-field repetition: no "direct eye contact" in both pose/relationships; no lighting in environment; no pose in subject.
+- NO cross-field repetition: no eye contact in both pose/relationships; no lighting in environment; no pose in subject.
 - subject = "{prompt}" + clothing ONLY.
-- pose = body position + expression + eye contact ONLY.
+- pose = body position + expression ONLY (no eye contact phrase).
 - state = physical/emotional condition ONLY (no clothing, no pose, no nudity in SFW).
 - environment = location + time + weather + props ONLY.
 - relationships = spatial relations ONLY.
 - camera = technical camera/lens/angle/quality ONLY.
 - NO quality-bait: "masterpiece", "best quality", "8k", "ultra detailed", "HDR", "UHD".
-- TOTAL positive prompt target: ~50 words MAX for SDXL compatibility.
+- TOTAL positive prompt target: ~75 words MAX for SDXL compatibility.
 - IMPORTANT: Do NOT copy examples. Create original combinations.
 Output only the JSON object, nothing else.

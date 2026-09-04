@@ -5,19 +5,19 @@ import re
 from typing import Any
 
 from .json_utils import remove_forbidden_tags, extract_json_object
-from .config import DEFAULT_CONTEXT_TOKEN, FORBIDDEN_TAGS, FORBIDDEN_TAGS_NEGATIVE, NEGATIVE_BASE, QUALITY_BAIT_TAGS
+from .config import DEFAULT_CONTEXT_TOKEN, FORBIDDEN_TAGS, FORBIDDEN_TAGS_NEGATIVE, NEGATIVE_BASE, QUALITY_BAIT_TAGS, NSFW
 
 
 MAX_WORDS_PER_FIELD = {
-    "subject": 12,
-    "pose": 12,
-    "state": 16,
-    "environment": 20,
-    "relationships": 18,
-    "lighting": 12,
-    "camera": 14,
-    "clothing": 10,
-    "nudity": 12,
+    "subject": 6,
+    "pose": 7,
+    "state": 8,
+    "environment": 10,
+    "relationships": 8,
+    "lighting": 6,
+    "camera": 8,
+    "clothing": 5,
+    "nudity": 6,
 }
 
 
@@ -88,13 +88,13 @@ def clean_step_json(raw: str) -> str:
 
 
 def assemble_positive(parts: dict[str, str], context_token: str = DEFAULT_CONTEXT_TOKEN) -> str:
-    subject = parts.get("subject", "").strip()
-    pose = parts.get("pose", "").strip()
-    state = parts.get("state", "").strip()
-    environment = parts.get("environment", "").strip()
-    lighting = parts.get("lighting", "").strip()
-    camera = parts.get("camera", "").strip()
-    relationships = parts.get("relationships", "").strip()
+    subject = str(parts.get("subject", "")).strip()
+    pose = str(parts.get("pose", "")).strip()
+    state = str(parts.get("state", "")).strip()
+    environment = str(parts.get("environment", "")).strip()
+    lighting = str(parts.get("lighting", "")).strip()
+    camera = str(parts.get("camera", "")).strip()
+    relationships = str(parts.get("relationships", "")).strip()
 
     if context_token in subject:
         chunks = [subject]
@@ -106,6 +106,10 @@ def assemble_positive(parts: dict[str, str], context_token: str = DEFAULT_CONTEX
     for part in (pose, state, environment, relationships, lighting, camera):
         if part:
             chunks.append(part)
+    if NSFW:
+        nudity = str(parts.get("nudity", "")).strip()
+        if nudity:
+            chunks.append(nudity)
     raw = ", ".join(chunks)
     cleaned = remove_forbidden_tags(raw, FORBIDDEN_TAGS)
     cleaned = remove_quality_bait(cleaned)
@@ -123,14 +127,30 @@ def remove_quality_bait(text: str) -> str:
     return ", ".join(parts)
 
 
-def assemble_negative(context: dict[str, Any]) -> str:
+def assemble_negative(context: dict[str, Any], ctx: dict[str, str] | None = None) -> str:
     extras = []
     lighting = str(context.get("lighting", "")).lower()
     environment = str(context.get("environment", "")).lower()
 
+    time_of_day = ""
+    weather = ""
+    if ctx:
+        time_of_day = str(ctx.get("step2_environment", "")).lower()
+        try:
+            env_obj = json.loads(ctx.get("step2_environment", "{}"))
+            if isinstance(env_obj, dict):
+                time_of_day = str(env_obj.get("time_of_day", "")).lower()
+                weather = str(env_obj.get("weather", "")).lower()
+        except (json.JSONDecodeError, TypeError):
+            pass
+
     night_markers = ("night", "dark", "evening", "dusk", "dusky", "moonlight", "candlelight", "twilight")
-    if any(m in lighting or m in environment for m in night_markers):
+    if any(m in lighting or m in environment or m in time_of_day for m in night_markers):
         extras.extend(["daylight", "sunlight", "harsh noon light"])
+
+    day_markers = ("morning", "noon", "afternoon", "golden hour", "dawn")
+    if any(m in time_of_day for m in day_markers):
+        extras.extend(["night", "darkness", "moonlight", "starlight"])
 
     nature_markers = ("forest", "mountain", "beach", "desert", "jungle", "river", "lake", "ocean")
     if any(m in environment for m in nature_markers):
@@ -139,6 +159,14 @@ def assemble_negative(context: dict[str, Any]) -> str:
     indoor_markers = ("bedroom", "bathroom", "kitchen", "office", "library", "locker", "shower", "studio")
     if any(m in environment for m in indoor_markers):
         extras.extend(["outdoor", "sky", "horizon", "landscape"])
+
+    underground_markers = ("metro", "subway", "cave", "tunnel", "basement", "bunker")
+    if any(m in environment for m in underground_markers):
+        extras.extend(["sunlight", "open sky", "natural daylight"])
+
+    rain_markers = ("rain", "wet", "dripping", "flooded", "waterlogged")
+    if any(m in weather or m in environment for m in rain_markers):
+        extras.extend(["dry", "arid", "sunny"])
 
     pieces = [p for p in (NEGATIVE_BASE, *extras) if p]
     raw = ", ".join(pieces)

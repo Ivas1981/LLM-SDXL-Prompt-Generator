@@ -27,7 +27,7 @@ def strip_code_fence(text: str) -> str:
 def strip_think_blocks(text: str) -> str:
     if not text:
         return ""
-    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+    return re.sub(r"<(/?)think>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
 
 
 def extract_json_object(text: str) -> Any | None:

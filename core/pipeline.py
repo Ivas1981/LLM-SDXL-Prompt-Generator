@@ -37,7 +37,7 @@ STEP_PARAMS = {
 STEP_USER_HINT = {
     "step1_concept.txt": "Generate a new concept. Avoid the following existing concepts:\n{names}",
     "step2_environment.txt": "Concept: {step1_concept}. Generate a detailed environment.",
-    "step3_pose.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nGenerate clothing and pose (eye contact with camera required).",
+    "step3_pose.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nGenerate clothing and pose. Pose should match the environment: if seated/kneeling/leaning, eyes look toward the camera; if standing, direct eye contact.",
     "step5_lighting.txt": "Environment: {step2_environment}\nDescribe concrete physical lighting for the scene.",
     "step6_camera.txt": "Scene so far: {step1_concept}, {step2_environment}, {step3_pose}, {step4_state}, {step5_lighting}\nDescribe the technical camera parameters.",
     "step7_assemble.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nState: {step4_state}\nLighting: {step5_lighting}\nCamera: {step6_camera}\nAssemble the final JSON for SDXL.",
@@ -81,6 +81,18 @@ def _format_user_hint(step_name: str, ctx: dict[str, str], existing_names: list[
             if NSFW
             else "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nDescribe the physical state and natural expression."
         )
+    if step_name == "step3_pose.txt" and NSFW:
+        template = (
+            "Concept: {step1_concept}\nEnvironment: {step2_environment}\nGenerate minimal remaining clothing and pose. "
+            "Some clothing should be removed or displaced by the scene (e.g. skirt lifted by wind, top shifted aside, sleeves rolled up). "
+            "Clothing tags should describe only what remains worn. "
+            "Pose should match the environment: if seated/kneeling/leaning, eyes look toward the camera naturally; if standing, direct eye contact."
+        )
+    if step_name == "step3_pose.txt" and not NSFW:
+        template = (
+            "Concept: {step1_concept}\nEnvironment: {step2_environment}\nGenerate clothing and pose. "
+            "Pose should match the environment: if seated/kneeling/leaning, eyes look toward the camera naturally; if standing, direct eye contact."
+        )
     recent = "\n".join(f"- {n}" for n in existing_names[-RECENT_NAMES_CONTEXT:]) or "none"
     if not template:
         return ""
@@ -107,15 +119,18 @@ def _chat_step(lm: LMClient, model: str, system: str, user: str, temp: float, ma
 
 
 def _build_parts(cleaned_parsed: dict[str, Any]) -> dict[str, str]:
-    return {
+    parts = {
         "subject": cleaned_parsed.get("subject") or cleaned_parsed.get("prompt_subject") or "",
         "pose": cleaned_parsed.get("pose") or "",
-        "state": cleaned_parsed.get("state") or (cleaned_parsed.get("nudity") if NSFW else "") or "",
+        "state": cleaned_parsed.get("state") or "",
         "environment": cleaned_parsed.get("environment") or cleaned_parsed.get("setting") or "",
         "relationships": cleaned_parsed.get("relationships") or cleaned_parsed.get("spatial") or "",
         "lighting": cleaned_parsed.get("lighting") or "",
         "camera": cleaned_parsed.get("camera") or "",
     }
+    if NSFW:
+        parts["nudity"] = cleaned_parsed.get("nudity") or ""
+    return parts
 
 
 def _post_process_with_local_model(lm: LMClient, model: str, system: str, positive: str, negative: str) -> tuple[str, str]:
@@ -148,9 +163,10 @@ def _chat_with_retry(
     """Call lm.chat for `step` with up to `max_attempts` retries on empty results."""
     temp, max_tokens = STEP_PARAMS.get(step, (0.7, 400))
     debug = get_debug() if DEBUG else None
+    system = prompts[step]
     for attempt in range(max_attempts):
         user_msg = _format_user_hint(step, ctx, existing_names)
-        response = _chat_step(lm, model, prompts[step], user_msg, temp, max_tokens)
+        response = _chat_step(lm, model, system, user_msg, temp, max_tokens)
         if response:
             return response
         reason = "empty_response"
@@ -255,7 +271,7 @@ def run_pipeline(
         parts = _build_parts(cleaned_parsed)
 
         pos = assemble_positive(parts, context_token=context_token)
-        neg = assemble_negative(parts)
+        neg = assemble_negative(parts, ctx=ctx)
 
         post_process_system = prompts.get("step7_post_process.txt")
         if post_process_system:

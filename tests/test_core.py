@@ -183,6 +183,30 @@ class ValidatorTests(unittest.TestCase):
         })
         self.assertEqual(out.count("standing"), 1)
 
+    def test_assemble_positive_includes_nudity_when_nsfw(self):
+        import unittest.mock as mock
+        with mock.patch("core.validator.NSFW", True):
+            out = validator.assemble_positive({
+                "subject": "test",
+                "pose": "standing",
+                "state": "relaxed",
+                "environment": "room",
+                "nudity": "bare chest",
+            })
+        self.assertIn("bare chest", out)
+
+    def test_assemble_positive_excludes_nudity_when_sfw(self):
+        import unittest.mock as mock
+        with mock.patch("core.validator.NSFW", False):
+            out = validator.assemble_positive({
+                "subject": "test",
+                "pose": "standing",
+                "state": "relaxed",
+                "environment": "room",
+                "nudity": "bare chest",
+            })
+        self.assertNotIn("bare chest", out)
+
     def test_assemble_positive_subject_without_token_prepends_token(self):
         out = validator.assemble_positive({
             "subject": "fashion photographer in silk dress",

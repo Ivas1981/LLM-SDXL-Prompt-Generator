@@ -154,6 +154,22 @@ def resolve_models_timeout(default: int = 180) -> int:
     return default
 
 
+def resolve_chat_timeout(default: int = 600) -> int:
+    env = os.environ.get("CHAT_TIMEOUT")
+    if env is not None:
+        try:
+            return int(env)
+        except ValueError:
+            return default
+    path = _resolve_config_path()
+    if path:
+        cfg = _load_toml(path)
+        v = _get(cfg, "lm_studio", "chat_timeout")
+        if isinstance(v, (int, float)):
+            return int(v)
+    return default
+
+
 def resolve_debug() -> bool:
     raw = os.environ.get("DEBUG")
     if raw is not None:

@@ -1,11 +1,11 @@
 Create a short identifier for the scene.
 
-Format: 3-4 lowercase underscore-separated tokens.
+Format: 3-5 lowercase underscore-separated tokens.
 Pattern: style_location_keyaction
 
 Rules:
 - Lowercase, digits, underscores only.
-- Maximum 4 tokens.
+- Maximum 5 tokens.
 - No full profession lists or long prop names.
 - Short and distinctive. Do NOT repeat the full concept.
 - Output ONLY the identifier, no extra text, no quotes.

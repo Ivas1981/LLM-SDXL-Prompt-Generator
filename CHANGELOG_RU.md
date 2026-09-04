@@ -1,5 +1,50 @@
 # История изменений
 
+## [1.5.0] - 2026-09-04
+
+### Изменено
+- **`{prompt}` сохранён как плейсхолдер пользователя**: Токен `{prompt}` в позитивном промпте теперь остаётся без изменений в выводе. Пользователь заменяет его самостоятельно на своё описание (женщина, возраст, цвет волос, телосложение, этническая принадлежность). Ранее пайплайн заменял `{prompt}` на профессию из step1, что было некорректно.
+- Удалена логика замены `{prompt}` из `_chat_with_retry` и `_format_user_hint` в `core/pipeline.py` — LLM теперь видит `{prompt}` в системном промпте и выводит его в поле subject.
+- Обновлены инструкции в `step7_assemble.txt` и `step7_assemble_nsfw.txt`: `{prompt}` ДОЛЖЕН сохраняться как плейсхолдер, а не заменяться любым текстом.
+- `CONTEXT_TOKEN` (`{prompt}`) теперь является определяющим плейсхолдером для настраиваемых атрибутов внешности.
+
+### Исправлено
+- `_format_user_hint` содержал мёртвый код, заменяющий `{prompt}` на профессию в пользовательских сообщениях — удалён.
+- `_chat_with_retry` содержал мёртвый код, заменяющий `{prompt}` на профессию в системных промптах — удалён.
+
+## [1.4.0] - 2026-09-02
+
+### Добавлено
+- **Валидация окружения с учётом типа локации** в `core/consistency.py`:
+  - Indoor локации (kitchen, office, mall, etc.) отвергают уличную погоду (rain, snow, storm, fog, wind)
+  - Underground локации (metro, subway, cave, tunnel, basement) отвергают ВСЕ солнечные лучи + уличную погоду
+  - Indoor но не underground позволяют оконный свет но отвергают прямой жёсткий солнечный свет
+  - Word-boundary regex matching предотвращает ложные срабатывания (например, "mall" в "small")
+- **SDXL-совместимые лимиты слов** во всех системных промптах:
+  - Уменьшенные лимиты: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8)
+  - Общий целевой позитивный промпт: ~53 слова макс. (вписывается в SDXL ~75 token limit)
+- **Инструкции анти-копирования примеров** во всех 11 файлах промптов
+- **Location-specific light source guidance** в step2 и step5 промптах
+- **Cross-field deduplication rules** в step7: нет "direct eye contact" в обоих pose/relationships, нет lighting в environment, нет pose в subject
+- **Post-process hard limit**: позитивный промпт ДОЛЖЕН оставаться под 75 tokens / ~50 слов
+- Comprehensive config.toml.example со всеми настраиваемыми ключами
+
+### Изменено
+- Все 11 системных промптов переписаны: убраны конкретные примеры моделей, которые они запоминали, ужаты лимиты слов, добавлены anti-copying правила
+- `pyproject.toml`: `python_requires = ">=3.10"` (было 3.11)
+- `config_loader.py`: Добавлен `tomli` fallback для Python 3.10 совместимости
+- Модель marker fields: `positive`/`negative` → `prompt`/`negative_prompt` для консистентности
+- Step8 name collision logic: убран некорректный `endswith` check вызывающий false positives
+- Semantic similarity check: теперь предупреждает но не пропускает когда embeddings недоступны
+- Duplicate detection: фильтрует пустые промпты из model marker entries
+
+### Исправлено
+- NSFW step4 template missing `{names}` placeholder для существующих концептов
+- Test isolation в config_loader tests: правильная очистка config.toml после каждого теста
+- test_latest_log_path_returns_path: переписан для использования temp directories
+- Config_loader import chain: tomllib/tomli fallback теперь работает корректно
+- test_valid_environment_ok: обновлён для использования валидного outdoor location
+
 ## [1.3.1] - 2026-09-02
 
 ### Изменено

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0] - 2026-09-04
+
+### Changed
+- **`{prompt}` preserved as user placeholder**: The `{prompt}` token in the positive prompt is now kept verbatim in the output. Users replace it themselves with their own description (woman, age, hair color, body type, ethnicity). Previously the pipeline replaced `{prompt}` with the profession from step1, which was incorrect.
+- Removed `{prompt}` replacement logic from `_chat_with_retry` and `_format_user_hint` in `core/pipeline.py` — the LLM now sees `{prompt}` in the system prompt and outputs it in the subject field.
+- Updated `step7_assemble.txt` and `step7_assemble_nsfw.txt` instructions: `{prompt}` MUST be preserved as a placeholder, not replaced with any text.
+- `CONTEXT_TOKEN` (`{prompt}`) is now the definitive placeholder for user-customizable appearance attributes.
+
+### Fixed
+- `_format_user_hint` had dead code that replaced `{prompt}` with the profession in user messages — removed.
+- `_chat_with_retry` had dead code that replaced `{prompt}` with the profession in system prompts — removed.
+
 ## [1.4.0] - 2026-09-02
 
 ### Added

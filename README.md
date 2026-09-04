@@ -82,13 +82,13 @@ for entry in describe():
 | `LM_API_TOKEN` | str | `""` | Bearer token; falls back to interactive prompt on 401 |
 | `EMBEDDING_MODEL_NAME` | str | `text-embedding-all-minilm-l6-v2` | Selected by user at startup |
 | `OUTPUT_JSON` | path | `<project>/sdxl_styles.json` | Output file location |
-| `CONTEXT_TOKEN` | str | `{prompt}` | Placeholder for appearance description |
+| `CONTEXT_TOKEN` | str | `{prompt}` | Placeholder for appearance description in the positive prompt. Replace with your own description before using in SDXL. |
 | `UNIQUENESS_THRESHOLD` | float | `0.85` | Reject duplicates above this cosine similarity |
 | `MAX_ATTEMPTS_MULTIPLIER` | int | `10` | `max_attempts = target * this` |
 | `CHAT_TIMEOUT` | int | `600` | Seconds |
 | `LM_CONTEXT_LENGTH` | int | `8192` | Sent to `/api/v1/models/load` |
 | `NEGATIVE_BASE_TAGS` | str | built-in default | Baseline tags for the negative prompt; configurable via env or `config.toml` |
-| `NSFW` | bool | `false` | When `true`, step 4 includes an additional `nudity` field in the output |
+| `NSFW` | bool | `false` | When `true`, step4_state includes an additional `nudity` field in the output |
 | `LM_STUDIO_LOG_ROOT` | path | `~/.lmstudio/server-logs` | Used by `lm_logs.py` |
 | `PROMPTGEN_CONFIG` | path | `./config.toml` | Override config.toml location |
 | `DEBUG` | bool | `off` | Write requests, responses, and errors to `debug.log` |
@@ -119,10 +119,16 @@ lm_studio_log_root = ""
 promptgen_config = ""
 ```
 
+## `{prompt}` placeholder
+
+The positive prompt always begins with `{prompt}` (the `CONTEXT_TOKEN`). This is a placeholder for the user's own subject description — woman, age, hair color, body type, ethnicity, etc. The LLM is instructed to preserve `{prompt}` verbatim in the output. Before using the prompt in SDXL, replace `{prompt}` with your desired description.
+
+Example: if the generated prompt starts with `{prompt}, clockwork engineer in worn leather apron...`, replace it with `young woman with red hair, slim build, european, clockwork engineer in worn leather apron...`.
+
 ## NSFW mode
 
 Set `nsfw = true` in `config.toml` under `[generation]` or `NSFW=true` in the
-environment to enable NSFW mode. In this mode, step 4 (`state`) includes an
+environment to enable NSFW mode. In this mode, step4_state (`state`) includes an
 additional `nudity` field in the output. By default, the generator runs in SFW
 mode and the `state` step produces only physical state tags.
 
@@ -159,5 +165,7 @@ python -m unittest discover tests
   the server responds `401` it asks for a token once per run.
 - JSON output is written atomically (`tempfile` + `os.replace`).
 - **Prompt word limits**: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8) — total ~53 words max for SDXL compatibility.
+- **`{prompt}` placeholder**: The positive prompt always starts with `{prompt}` (configurable via `CONTEXT_TOKEN`). This is a placeholder for the user's own description — woman, age, hair color, body type, ethnicity, etc. Replace it before using the prompt in SDXL.
 - **Location-aware validation**: indoor locations reject outdoor weather (rain, snow, etc.); underground locations reject all sunlight; outdoor locations accept any weather valid for time_of_day.
 - **Anti-example-copying**: All prompts explicitly instruct the LLM not to copy examples from the instructions, ensuring diverse, original outputs.
+- **`{prompt}` is preserved verbatim** in the output JSON. The LLM is instructed to keep it as a placeholder. Users replace it with their own subject description before generating images.

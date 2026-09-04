@@ -27,7 +27,7 @@ UNIQUENESS_THRESHOLD = _loader.resolve_uniqueness_threshold()
 MAX_ATTEMPTS_MULTIPLIER = _env.get_int("MAX_ATTEMPTS_MULTIPLIER")
 
 LM_STUDIO_MODELS_TIMEOUT = _loader.resolve_models_timeout()
-LM_STUDIO_CHAT_TIMEOUT = _env.get_int("CHAT_TIMEOUT")
+LM_STUDIO_CHAT_TIMEOUT = _loader.resolve_chat_timeout()
 LM_STUDIO_EMBEDDING_TIMEOUT = 120
 
 DEBUG = _loader.resolve_debug()

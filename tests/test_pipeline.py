@@ -43,6 +43,8 @@ class PipelineTests(unittest.TestCase):
             prompts = load_system_prompts(prompts_dir)
         self.assertIn("step7_assemble.txt", prompts)
         self.assertIn("nudity", prompts["step7_assemble.txt"].lower())
+        self.assertIn('"nudity"', prompts["step7_assemble.txt"])
+        self.assertNotIn("state = physical/emotional condition + scene-motivated nudity", prompts["step7_assemble.txt"].lower())
 
     def test_step2_time_of_day_matches_valid_times(self):
         content = (ROOT / "prompts" / "step2_environment.txt").read_text(encoding="utf-8")
@@ -76,6 +78,18 @@ class PipelineTests(unittest.TestCase):
             hint = _format_user_hint("step4_state.txt", {"step1_concept": "c", "step2_environment": "e", "step3_pose": "p"}, [])
         self.assertIn("partial or full nudity", hint)
 
+    def test_step3_pose_hint_nsfw_includes_minimal_clothing(self):
+        with unittest.mock.patch("core.pipeline.NSFW", True):
+            hint = _format_user_hint("step3_pose.txt", {"step1_concept": "c", "step2_environment": "e"}, [])
+        self.assertIn("minimal remaining clothing", hint)
+        self.assertIn("removed or displaced", hint)
+
+    def test_step3_pose_hint_sfw_has_full_clothing(self):
+        with unittest.mock.patch("core.pipeline.NSFW", False):
+            hint = _format_user_hint("step3_pose.txt", {"step1_concept": "c", "step2_environment": "e"}, [])
+        self.assertIn("Generate clothing and pose", hint)
+        self.assertNotIn("minimal remaining clothing", hint)
+
     def test_step4_user_hint_sfw_excludes_nudity(self):
         with unittest.mock.patch("core.pipeline.NSFW", False):
             hint = _format_user_hint("step4_state.txt", {"step1_concept": "c", "step2_environment": "e", "step3_pose": "p"}, [])
@@ -92,7 +106,8 @@ class PipelineTests(unittest.TestCase):
         parsed = {"state": "", "nudity": "bare chest"}
         with unittest.mock.patch("core.pipeline.NSFW", True):
             parts = _build_parts(parsed)
-        self.assertEqual(parts["state"], "bare chest")
+        self.assertEqual(parts["state"], "")
+        self.assertEqual(parts["nudity"], "bare chest")
 
     def test_generate_batch_adds_entries(self):
         import unittest.mock as mock

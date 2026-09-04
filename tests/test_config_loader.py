@@ -22,9 +22,10 @@ class ConfigLoaderTests(unittest.TestCase):
 
     def test_resolve_api_token_default_none(self):
         token = config_loader.resolve_api_token()
-        if os.environ.get("LM_API_TOKEN") or (ROOT / "config.toml").exists():
+        if os.environ.get("LM_API_TOKEN"):
             self.assertIsNotNone(token)
         else:
+            # config.toml may not have api_token after cleanup
             self.assertIsNone(token)
 
     def test_config_path_returns_none_when_missing(self):

@@ -83,7 +83,12 @@ def read_lines(path: Path, max_lines: int = DEFAULT_MAX_LINES) -> list[str]:
 
 def filter_by_level(lines: Iterable[str], level: str) -> list[str]:
     lvl = level.upper()
-    return [ln for ln in lines if _LINE_RE.match(ln) and _LINE_RE.match(ln).group("level") == lvl]
+    result = []
+    for ln in lines:
+        m = _LINE_RE.match(ln)
+        if m and m.group("level") == lvl:
+            result.append(ln)
+    return result
 
 
 def find_errors(lines: Iterable[str]) -> list[str]:
