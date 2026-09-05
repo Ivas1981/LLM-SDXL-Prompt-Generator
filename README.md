@@ -6,7 +6,7 @@ uniqueness via embeddings.
 
 ## Features
 
-- 8-step LLM pipeline (concept → environment → pose → state → lighting → camera → assembly → naming)
+- 8-step LLM pipeline (concept → environment → pose → state → lighting → camera → assembly → naming) plus an optional local-model post-processing pass that refines the assembled prompt
 - JSON-only system prompts with strict schemas
 - Automatic quality-bait tag stripping
 - Semantic duplicate detection via embedding similarity
@@ -128,9 +128,25 @@ Example: if the generated prompt starts with `{prompt}, clockwork engineer in wo
 ## NSFW mode
 
 Set `nsfw = true` in `config.toml` under `[generation]` or `NSFW=true` in the
-environment to enable NSFW mode. In this mode, step4_state (`state`) includes an
-additional `nudity` field in the output. By default, the generator runs in SFW
-mode and the `state` step produces only physical state tags.
+environment to enable NSFW mode. The behavior is:
+
+- **SFW (default):** `prompts/step4_state_sfw.txt` is used instead of
+  `prompts/step4_state.txt`. The SFW prompt omits the `nudity` field.
+- **NSFW:** `prompts/step4_state.txt` is used (which already includes a
+  `nudity` field) and `prompts/step7_assemble_nsfw.txt` replaces the standard
+  step7 assembly prompt. The final positive prompt includes the `nudity`
+  tags after the camera field.
+
+## Word budget
+
+The hard limits defined in `core/validator.py` are:
+
+- subject: 6, pose: 7, state: 8, environment: 10, relationships: 8,
+  lighting: 6, camera: 8, nudity: 6
+
+Summed without `{prompt}`, `relationships`, and `nudity` the maximum is
+~53 words; with all fields and `{prompt}` the practical ceiling is ~57
+words (still well within SDXL's ~75-token positive-prompt budget).
 
 ## Debug logging
 
@@ -164,7 +180,7 @@ python -m unittest discover tests
 - LM Studio auth: the script reads `LM_API_TOKEN` from the environment, and if
   the server responds `401` it asks for a token once per run.
 - JSON output is written atomically (`tempfile` + `os.replace`).
-- **Prompt word limits**: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8) — total ~53 words max for SDXL compatibility.
+- **Prompt word limits**: subject(6), pose(7), state(8), environment(10), relationships(8), lighting(6), camera(8), nudity(6) — total ~53 words max for SDXL compatibility.
 - **`{prompt}` placeholder**: The positive prompt always starts with `{prompt}` (configurable via `CONTEXT_TOKEN`). This is a placeholder for the user's own description — woman, age, hair color, body type, ethnicity, etc. Replace it before using the prompt in SDXL.
 - **Location-aware validation**: indoor locations reject outdoor weather (rain, snow, etc.); underground locations reject all sunlight; outdoor locations accept any weather valid for time_of_day.
 - **Anti-example-copying**: All prompts explicitly instruct the LLM not to copy examples from the instructions, ensuring diverse, original outputs.

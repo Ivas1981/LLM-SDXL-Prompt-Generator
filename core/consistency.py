@@ -14,6 +14,15 @@ VALID_TIMES = (
     "dawn",
 )
 
+TIME_ALIASES = {
+    "nighttime": "night",
+    "midnight": "night",
+    "daytime": "noon",
+    "sunrise": "dawn",
+    "sunset": "dusk",
+    "twilight": "dusk",
+}
+
 DAY_TIMES = {"morning", "noon", "afternoon", "golden hour", "dawn"}
 NIGHT_TIMES = {"dusk", "evening", "night"}
 
@@ -87,8 +96,9 @@ def validate_environment(env: dict[str, Any]) -> str | None:
         return "environment must be a JSON object"
 
     time_of_day = str(env.get("time_of_day", "")).strip().lower()
+    time_of_day = TIME_ALIASES.get(time_of_day, time_of_day)
     if time_of_day not in VALID_TIMES:
-        return f"time_of_day must be exactly one of {list(VALID_TIMES)}"
+        return f"time_of_day must be exactly one of {list(VALID_TIMES)} (got '{env.get('time_of_day')}')"
 
     weather = str(env.get("weather", "")).strip().lower()
     location = str(env.get("location", "")).strip()

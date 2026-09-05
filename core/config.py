@@ -54,8 +54,6 @@ FORBIDDEN_TAGS = (
     "asian", "european", "african", "caucasian", "latino",
 )
 
-FORBIDDEN_TAGS_NEGATIVE: tuple[str, ...] = ()
-
 NEGATIVE_BASE = _env.get_str("NEGATIVE_BASE_TAGS")
 
 QUALITY_BAIT_TAGS = (

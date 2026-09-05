@@ -36,11 +36,11 @@ STEP_PARAMS = {
 
 STEP_USER_HINT = {
     "step1_concept.txt": "Generate a new concept. Avoid the following existing concepts:\n{names}",
-    "step2_environment.txt": "Concept: {step1_concept}. Generate a detailed environment.",
-    "step3_pose.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nGenerate clothing and pose. Pose should match the environment: if seated/kneeling/leaning, eyes look toward the camera; if standing, direct eye contact.",
-    "step5_lighting.txt": "Environment: {step2_environment}\nDescribe concrete physical lighting for the scene.",
+    "step2_environment.txt": "Concept: {step1_concept}\nMood: {mood}\nGenerate a detailed environment.",
+    "step3_pose.txt": "Concept: {step1_concept}\nMood: {mood}\nEnvironment: {step2_environment}\nGenerate clothing and pose. Pose should match the environment: if seated/kneeling/leaning, eyes look toward the camera; if standing, direct eye contact.",
+    "step5_lighting.txt": "Environment: {step2_environment}\nMood: {mood}\nDescribe concrete physical lighting for the scene.",
     "step6_camera.txt": "Scene so far: {step1_concept}, {step2_environment}, {step3_pose}, {step4_state}, {step5_lighting}\nDescribe the technical camera parameters.",
-    "step7_assemble.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nState: {step4_state}\nLighting: {step5_lighting}\nCamera: {step6_camera}\nAssemble the final JSON for SDXL.",
+    "step7_assemble.txt": "Concept: {step1_concept}\nMood: {mood}\nEnvironment: {step2_environment}\nClothing/pose: {step3_pose}\nState: {step4_state}\nLighting: {step5_lighting}\nCamera: {step6_camera}\nAssemble the final JSON for SDXL. If mood tags fit naturally into relationships or lighting, weave them in; otherwise omit.",
     "step8_name.txt": "Concept: {step1_concept}\nEnvironment: {step2_environment}\nPose: {step3_pose}\nAvoid the following existing identifiers:\n{names}\nGenerate a short identifier in English.",
 }
 
@@ -242,6 +242,14 @@ def run_pipeline(
         if not response:
             return None, "empty response (step1)"
         ctx[step1.replace(".txt", "")] = clean_step_json(response)
+        try:
+            concept_obj = json.loads(ctx["step1_concept"])
+            if isinstance(concept_obj, dict):
+                ctx["mood"] = str(concept_obj.get("mood", "")).strip()
+            else:
+                ctx["mood"] = ""
+        except (json.JSONDecodeError, TypeError):
+            ctx["mood"] = ""
 
         env_result, env_reason = _run_environment_step(lm, model, prompts, ctx, existing_names)
         if DEBUG and debug:
@@ -305,6 +313,7 @@ def run_pipeline(
             fallback = "_".join(filter(None, [subject_words, environment_words]))
             scene_name = _safe_name(fallback or "scene")
 
+        resolved = False
         for _ in range(3):
             conflict = False
             if data:
@@ -314,6 +323,7 @@ def run_pipeline(
                         conflict = True
                         break
             if not conflict:
+                resolved = True
                 break
             name_resp = _chat_with_retry(
                 lm,
@@ -332,7 +342,8 @@ def run_pipeline(
                 environment_words = (parts.get("environment") or "").split(",")[0].strip()
                 fallback = "_".join(filter(None, [subject_words, environment_words]))
                 scene_name = _safe_name(fallback or "scene")
-        else:
+
+        if not resolved:
             base = scene_name or "scene"
             idx = 1
             while True:

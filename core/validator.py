@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 from .json_utils import remove_forbidden_tags, extract_json_object
-from .config import DEFAULT_CONTEXT_TOKEN, FORBIDDEN_TAGS, FORBIDDEN_TAGS_NEGATIVE, NEGATIVE_BASE, QUALITY_BAIT_TAGS, NSFW
+from .config import DEFAULT_CONTEXT_TOKEN, FORBIDDEN_TAGS, NEGATIVE_BASE, QUALITY_BAIT_TAGS, NSFW
 
 
 MAX_WORDS_PER_FIELD = {
@@ -16,7 +16,6 @@ MAX_WORDS_PER_FIELD = {
     "relationships": 8,
     "lighting": 6,
     "camera": 8,
-    "clothing": 5,
     "nudity": 6,
 }
 
@@ -121,8 +120,15 @@ def remove_quality_bait(text: str) -> str:
         return ""
     result = text
     for tag in QUALITY_BAIT_TAGS:
-        pattern = r",?\s*\b" + re.escape(tag) + r"\b\s*,?"
-        result = re.sub(pattern, " ", result, flags=re.IGNORECASE)
+        escaped = re.escape(tag)
+        if " " in tag or "-" in tag:
+            parts = re.split(r"[\s\-]+", tag)
+            joined = r"[\s,]+".join(re.escape(p) for p in parts)
+            pattern = r"(?:^|[\s,]+)(?:" + joined + r")(?=[\s,]+|$)"
+            result = re.sub(pattern, " ", result, flags=re.IGNORECASE)
+        else:
+            pattern = r",?\s*\b" + escaped + r"\b\s*,?"
+            result = re.sub(pattern, " ", result, flags=re.IGNORECASE)
     parts = [p.strip() for p in result.split(",") if p.strip()]
     return ", ".join(parts)
 
@@ -170,7 +176,7 @@ def assemble_negative(context: dict[str, Any], ctx: dict[str, str] | None = None
 
     pieces = [p for p in (NEGATIVE_BASE, *extras) if p]
     raw = ", ".join(pieces)
-    return remove_forbidden_tags(raw, FORBIDDEN_TAGS_NEGATIVE)
+    return raw
 
 
 def validate_result(result: dict[str, Any]) -> str | None:
@@ -190,4 +196,10 @@ def validate_result(result: dict[str, Any]) -> str | None:
         max_words = MAX_WORDS_PER_FIELD.get(key)
         if max_words and len(value.split()) > max_words:
             return f"{key} too long ({len(value.split())} words, max {max_words})"
+    if NSFW:
+        nudity = parts.get("nudity", "")
+        if isinstance(nudity, str) and nudity:
+            max_nudity = MAX_WORDS_PER_FIELD.get("nudity", 6)
+            if len(nudity.split()) > max_nudity:
+                return f"nudity too long ({len(nudity.split())} words, max {max_nudity})"
     return None

@@ -39,7 +39,9 @@ def _resolve_config_path() -> Path | None:
         p = Path(override)
         return p if p.exists() else None
     candidate = _project_root() / DEFAULT_CONFIG_NAME
-    return candidate if candidate.exists() else None
+    if not candidate.exists():
+        return None
+    return candidate
 
 
 def _load_toml(path: Path) -> dict[str, Any]:

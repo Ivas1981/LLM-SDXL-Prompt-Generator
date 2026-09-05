@@ -1,5 +1,23 @@
 # История изменений
 
+## [1.5.1] - 2026-09-05
+
+### Исправлено
+- **Изоляция тестов**: `tests/test_config_loader.py` теперь в `setUp` указывает `PROMPTGEN_CONFIG` на временный файл и очищает релевантные переменные окружения — реальный `config.toml` рядом с проектом больше не утекает в тесты.
+- **`remove_quality_bait`**: многословные теги вроде `"ultra detailed"` теперь удаляются и в разорванном запятой виде (`"ultra, detailed"`).
+- **`validate_environment`**: алиасы `time_of_day` (`nighttime`, `midnight`, `daytime`, `sunrise`, `sunset`, `twilight`) теперь нормализуются к каноническим значениям — модель больше не получает false-failure за синонимы.
+- **`validate_result`**: длина NSFW-поля `nudity` теперь проверяется по `MAX_WORDS_PER_FIELD["nudity"] = 6`.
+- **Цикл разрешения коллизий имени сцены**: путаный `for/else` заменён на явный флаг `resolved`.
+- **CHANGELOG 1.4.0 лгал** про удаление `endswith` — уточнено, что проверка суффикса сохранена как страховка.
+- **Описание NSFW в README** исправлено: SFW подменяет `step4_state.txt` на `step4_state_sfw.txt`; NSFW использует базовый `step4_state.txt` (уже содержит `nudity`) плюс `step7_assemble_nsfw.txt`.
+
+### Изменено
+- **Mood теперь проходит дальше**: `step1_concept.txt` сохраняет поле `mood`; `pipeline.run_pipeline` извлекает его из JSON шага 1 и прокидывает в user-hint шагов 2, 3, 5, 7.
+- **Шаг 3 больше не просит отдельное поле `eye_contact`** — eye contact встроен в фразу `pose`, как требует обновлённый промпт.
+- **`live_smoke.py`**: теперь вызывает `run_pipeline()` вместо копипасты логики, что отражает любые изменения пайплайна.
+- **`FORBIDDEN_TAGS_NEGATIVE`** удалён (пустой кортеж, не использовался).
+- **`MAX_WORDS_PER_FIELD["clothing"]`** удалён — clothing входит в `subject` финального промпта.
+
 ## [1.5.0] - 2026-09-04
 
 ### Изменено
@@ -34,7 +52,7 @@
 - `pyproject.toml`: `python_requires = ">=3.10"` (было 3.11)
 - `config_loader.py`: Добавлен `tomli` fallback для Python 3.10 совместимости
 - Модель marker fields: `positive`/`negative` → `prompt`/`negative_prompt` для консистентности
-- Step8 name collision logic: убран некорректный `endswith` check вызывающий false positives
+- Step8 name collision logic: сохранена проверка суффикса `endswith` (страховка от коллизий суффиксов) плюс проверка полного совпадения имени
 - Semantic similarity check: теперь предупреждает но не пропускает когда embeddings недоступны
 - Duplicate detection: фильтрует пустые промпты из model marker entries
 

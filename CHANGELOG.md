@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.1] - 2026-09-05
+
+### Fixed
+- **Test isolation**: `tests/test_config_loader.py` now points `PROMPTGEN_CONFIG` at a temp file and clears all relevant env vars in `setUp`, so a real `config.toml` next to the project never leaks into test runs.
+- **`remove_quality_bait`**: multi-word tags like `"ultra detailed"` are now stripped even when the model breaks them across commas (`"ultra, detailed"`).
+- **`validate_environment`**: `time_of_day` aliases (`nighttime`, `midnight`, `daytime`, `sunrise`, `sunset`, `twilight`) are now normalized to their canonical values, preventing false validation failures for synonyms.
+- **`validate_result`**: NSFW nudity length is now enforced against `MAX_WORDS_PER_FIELD["nudity"] = 6`.
+- **Pipeline scene-name collision loop**: replaced the misleading `for/else` with an explicit `resolved` flag for readability.
+- **CHANGELOG 1.4.0 lied** about removing `endswith` suffix check — clarified that the check is kept as a safety guard.
+- **README NSFW description** corrected: SFW swaps `step4_state.txt` for `step4_state_sfw.txt`; NSFW uses the base `step4_state.txt` (which already contains `nudity`) plus `step7_assemble_nsfw.txt`.
+
+### Changed
+- **Mood now flows downstream**: `step1_concept.txt` keeps the `mood` field; `pipeline.run_pipeline` extracts it from step1 JSON and threads it through the user-hint for steps 2, 3, 5, 7.
+- **Step3 no longer asks for a separate `eye_contact` field** — eye contact is folded into the `pose` phrase as instructed by the new prompt.
+- **`live_smoke.py`**: now calls `run_pipeline()` instead of duplicating its logic, so any pipeline change is reflected automatically.
+- **`FORBIDDEN_TAGS_NEGATIVE`** removed (it was an empty tuple never used in production).
+- **`MAX_WORDS_PER_FIELD["clothing"]`** removed — clothing is part of `subject` in the final prompt.
+
 ## [1.5.0] - 2026-09-04
 
 ### Changed
@@ -34,7 +52,7 @@
 - `pyproject.toml`: `python_requires = ">=3.10"` (was 3.11)
 - `config_loader.py`: Added `tomli` fallback for Python 3.10 compatibility
 - Model marker fields: `positive`/`negative` → `prompt`/`negative_prompt` for consistency
-- Step8 name collision logic: removed incorrect `endswith` check causing false positives
+- Step8 name collision logic: kept `endswith` suffix check (guards against suffix clashes) but also match the full candidate name to catch duplicates that share the suffix exactly.
 - Semantic similarity check: now warns but doesn't skip when embeddings unavailable
 - Duplicate detection: filters empty prompts from model marker entries
 

@@ -147,10 +147,15 @@ class ValidatorTests(unittest.TestCase):
         })
         self.assertIn("outdoor", neg)
 
-    def test_assemble_negative_uses_separate_forbidden_list(self):
+    def test_assemble_negative_does_not_strip_positive_forbidden_tags(self):
+        """Forbidden appearance tags must NOT be stripped from the negative prompt.
+
+        `FORBIDDEN_TAGS_NEGATIVE` was removed; the negative prompt now keeps
+        whatever it was given (only the positive prompt strips appearance
+        descriptors). This guards against accidental re-introduction.
+        """
         from unittest.mock import patch
-        with patch("core.validator.NEGATIVE_BASE", "woman, young"), \
-             patch("core.validator.FORBIDDEN_TAGS_NEGATIVE", ()):
+        with patch("core.validator.NEGATIVE_BASE", "woman, young, deformed"):
             neg = validator.assemble_negative({
                 "lighting": "soft light",
                 "environment": "bedroom",
@@ -236,9 +241,23 @@ class ConsistencyTests(unittest.TestCase):
         self.assertIsNone(consistency.validate_environment(env))
 
     def test_invalid_time_of_day(self):
-        env = {"location": "kitchen", "time_of_day": "midnight", "weather": "clear"}
+        env = {"location": "kitchen", "time_of_day": "siesta", "weather": "clear"}
         err = consistency.validate_environment(env)
+        self.assertIsNotNone(err)
         self.assertIn("time_of_day", err)
+
+    def test_time_of_day_aliases_accepted(self):
+        for alias, canonical in (
+            ("nighttime", "night"),
+            ("midnight", "night"),
+            ("daytime", "noon"),
+            ("sunrise", "dawn"),
+            ("sunset", "dusk"),
+            ("twilight", "dusk"),
+        ):
+            env = {"location": "street", "time_of_day": alias, "weather": "clear"}
+            err = consistency.validate_environment(env)
+            self.assertIsNone(err, f"alias {alias!r} unexpectedly invalid: {err}")
 
     def test_location_time_leak_rejected(self):
         env = {"location": "small apartment kitchen at night", "time_of_day": "evening", "weather": "clear"}

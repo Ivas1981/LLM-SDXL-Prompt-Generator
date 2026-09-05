@@ -59,89 +59,21 @@ def main(model_name: str | None = None) -> int:
     print("\nRunning pipeline...")
     t0 = time.time()
 
-    # Replicate pipeline with logging to find the failing step.
-    from core import pipeline as P
+    result, reason = run_pipeline(
+        lm=lm,
+        model=model_name,
+        prompts=prompts,
+        existing_names=existing_names,
+        data=[],
+    )
 
-    ctx: dict[str, str] = {}
-    step1 = "step1_concept.txt"
-    temp, mt = P.STEP_PARAMS[step1]
-    resp = lm.chat(model_name, prompts[step1],
-                   P._format_user_hint(step1, ctx, existing_names),
-                   temperature=temp, max_tokens=mt)
-    print(f"  step1: ok={bool(resp)}, len={len(resp) if resp else 0}")
-    if not resp:
-        return 1
-    ctx[step1.replace(".txt", "")] = resp
-
-    env_result, env_reason = P._run_environment_step(lm, model_name, prompts, ctx, existing_names)
-    print(f"  step2: env_ok={bool(env_result)}")
-    if not env_result:
-        print(f"  step2 failed: {env_reason}")
-        return 1
-    ctx["step2_environment"] = json.dumps(env_result, ensure_ascii=False)
-
-    for step in [s for s in P.PIPELINE_STEPS[:-1] if s not in (step1, "step2_environment.txt")]:
-        temp, mt = P.STEP_PARAMS[step]
-        resp = lm.chat(model_name, prompts[step],
-                       P._format_user_hint(step, ctx, existing_names),
-                       temperature=temp, max_tokens=mt)
-        print(f"  {step}: ok={bool(resp)}, len={len(resp) if resp else 0}")
-        if not resp:
-            return 1
-        ctx[step.replace(".txt", "")] = resp
-
-    assemble_response = ctx["step7_assemble"]
-    parsed = P.extract_json_object(assemble_response or "")
-    print(f"  parse step7: dict={isinstance(parsed, dict)}")
-    if not isinstance(parsed, dict):
-        print(f"  raw assemble response[:300]: {assemble_response[:300]}")
-        return 1
-
-    parts = {
-        "subject": parsed.get("subject") or "",
-        "pose": parsed.get("pose") or "",
-        "state": parsed.get("state") or "",
-        "environment": parsed.get("environment") or "",
-        "relationships": parsed.get("relationships") or "",
-        "lighting": parsed.get("lighting") or "",
-        "camera": parsed.get("camera") or "",
-    }
-    if not parts["subject"]:
-        print(f"  step7 keys: {list(parsed.keys())}")
-        print(f"  raw parsed: {parsed}")
-    pos = P.assemble_positive(parts)
-    print(f"  pos has token: {config.DEFAULT_CONTEXT_TOKEN in pos}, len={len(pos)}")
-    print(f"  pos[:200]: {pos[:200]}")
-    neg = P.assemble_negative(parts)
-    err = P.validate_result({"prompt": pos, "negative_prompt": neg})
-    print(f"  validate: err={err}")
-    if err:
-        return 1
-
-    name_resp = lm.chat(model_name, prompts["step8_name.txt"],
-                       P._format_user_hint("step8_name.txt", ctx, existing_names),
-                       temperature=P.STEP_PARAMS["step8_name.txt"][0],
-                       max_tokens=P.STEP_PARAMS["step8_name.txt"][1])
-    print(f"  step8: ok={bool(name_resp)}, raw={name_resp[:60] if name_resp else None}")
-    if not name_resp:
-        return 1
-
-    from core.pipeline import _safe_name
-    scene_name = _safe_name(name_resp or "")
-    print(f"  scene_name: {scene_name}")
-
-    result = {
-        "prompt": pos,
-        "negative_prompt": neg,
-        "_parts": parts,
-        "_scene_name": scene_name,
-        "_raw_assembled": {
-            "prompt": parsed.get("prompt", ""),
-            "negative_prompt": parsed.get("negative_prompt", ""),
-        },
-    }
     elapsed = time.time() - t0
+    if not result:
+        print(f"Pipeline failed: {reason}")
+        return 1
+
     print(f"\nManual pipeline OK in {elapsed:.1f}s")
+
     print("\n--- _parts (raw fields from step7) ---")
     for k, v in result["_parts"].items():
         print(f"  {k}: {v}")
